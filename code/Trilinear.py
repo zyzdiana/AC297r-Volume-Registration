@@ -71,15 +71,6 @@ def trilinear_interp(volume, x, y, z):
     z0 = T.floor(z).astype('int32')
     z1 = z0 + 1
 
-	x = (x + volume.shape[1]) % volume.shape[1]
-	y = (y + volume.shape[0]) % volume.shape[0]
-	z = (z + volume.shape[2]) % volume.shape[2]
-    
-    # define some coefficients
-    xd = x-x0
-    yd = y-y0
-    zd = z-z0
-    
     # Clip
     x0 = (x0 + volume.shape[0]) % volume.shape[0]
     x1 = (x1 + volume.shape[0]) % volume.shape[0]
@@ -87,6 +78,16 @@ def trilinear_interp(volume, x, y, z):
     y1 = (y1 + volume.shape[0]) % volume.shape[0]
     z0 = (z0 + volume.shape[0]) % volume.shape[0]
     z1 = (z1 + volume.shape[0]) % volume.shape[0] 
+    
+    x = (x + volume.shape[1]) % volume.shape[1]
+    y = (y + volume.shape[0]) % volume.shape[0]
+    z = (z + volume.shape[2]) % volume.shape[2]
+    
+    # define some coefficients
+    xd = x-x0
+    yd = y-y0
+    zd = z-z0
+
 
     
     # set up for the bilinear interpolation
