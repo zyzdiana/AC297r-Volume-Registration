@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_volumes(files):
 	# Visualize the selected volumes
@@ -17,3 +18,19 @@ def plot_volumes(files):
 	[ax[4][i].set_title('Position5') for i in xrange(3)]
 	plt.show()
 	plt.close(fig)
+
+def plot_cost_func(thetas,cost_func,res,interp):
+	# plot the cost function and find the minimum angle
+    fig, ax = plt.subplots(1,3)
+    fig.set_figwidth(20)
+    fig.set_figheight(5)
+    arg = ['SSD', 'L1', 'L2']
+    angMin = thetas[np.argmin(cost_func,axis=0)]
+    for i in xrange(3):
+        ax[i].plot(thetas,cost_func[:,i],label='Min angle = %s\n Resolution = %smm' % (angMin[i], res))
+        ax[i].set_title('%s Cost function with %s interpolation' % (arg[i],interp), fontsize=14)
+        ax[i].set_xlabel('Angle (degrees)')
+        ax[i].set_ylabel('Cost function')
+        ax[i].legend(loc='best')
+    plt.show()
+    plt.close(fig)
