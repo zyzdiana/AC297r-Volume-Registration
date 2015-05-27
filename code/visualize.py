@@ -19,7 +19,7 @@ def plot_volumes(files):
 	plt.show()
 	plt.close(fig)
 
-def plot_cost_func(thetas,cost_func,res,interp):
+def plot_cost_func_all(thetas,cost_func,res,interp):
 	# plot the cost function and find the minimum angle
     fig, ax = plt.subplots(1,3)
     fig.set_figwidth(20)
@@ -34,3 +34,12 @@ def plot_cost_func(thetas,cost_func,res,interp):
         ax[i].legend(loc='best')
     plt.show()
     plt.close(fig)
+    
+def plot_cost_func(thetas,cost_func,res,interp,rot, coil):
+    # plot the cost function and find the minimum angle
+    angMin = thetas[np.argmin(cost_func,axis=0)]
+    plt.plot(thetas,cost_func,label='Min angle = %s\n Resolution = %s \n rotation = %s' % (angMin, res, rot))
+    plt.title('SSD with %s interpolation, %s coil' % (interp,coil), fontsize=14)
+    plt.xlabel('Angle (degrees)')
+    plt.ylabel('Cost function')
+    plt.legend(loc='best')

@@ -231,7 +231,7 @@ def rot_cost_func(vol1, vol2, thetas, axis, interpolation='bilinear',mask=False)
     thetas: list of degress to try
     arg: string for plot titles
     '''
-    cost_func = np.zeros([len(thetas),3])
+    cost_func = np.zeros([len(thetas),])
     for idx, t in enumerate(thetas):
         new_vol2 = np.ones(vol2.shape)
         for i in xrange(len(vol2)):
@@ -250,7 +250,5 @@ def rot_cost_func(vol1, vol2, thetas, axis, interpolation='bilinear',mask=False)
                 new_vol2[:,i,:] = rot
             else:
                 new_vol2[:,:,i] = rot
-        cost_func[idx,0] = cf_ssd(new_vol2,vol1)
-        cost_func[idx,1] = cf_L1(new_vol2,vol1)
-        cost_func[idx,2] = cf_L2(new_vol2,vol1)
+        cost_func[idx] = cf_ssd(new_vol2,vol1)
     return cost_func
