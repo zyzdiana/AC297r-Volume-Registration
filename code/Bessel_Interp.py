@@ -3,6 +3,7 @@ import scipy.special
 import ghalton
 from utils import to_radian,hann
 from mask import circle_mask
+import time
 
 def bessel_rotate(image_org, theta, mask = True, smooth = False, mode = 1):
     image = image_org.copy()
@@ -11,7 +12,6 @@ def bessel_rotate(image_org, theta, mask = True, smooth = False, mode = 1):
     Ib = np.zeros(image.shape)
     theta = to_radian(theta)
     s = (image.shape[0]-1)/2.
-
     x = np.linspace(-s, s, image.shape[1])
     y = np.linspace(-s, s, image.shape[0])
     
@@ -20,20 +20,19 @@ def bessel_rotate(image_org, theta, mask = True, smooth = False, mode = 1):
     rM = np.array([[np.cos(theta), -np.sin(theta)],[np.sin(theta), np.cos(theta)]])
     for i in np.arange(-s,s+1):
         for j in np.arange(-s,s+1):
-            x = np.dot(rM, np.array([i,j]))
+            new_x = np.dot(rM, np.array([i,j]))
 
-            if(np.sum(abs(x)>s)):
-                Ib[i+s,j+s]=0
-                
+            if(np.sum(abs(np.round(new_x,5))>s)):
+                Ib[i+s,j+s] = 0
             else:
-                R = np.sqrt((xx-x[1])**2 + (yy-x[0])**2)
+                R = np.sqrt((xx-new_x[1])**2 + (yy-new_x[0])**2)
                 mask_R = (R == 0)
                 Bess = np.zeros(R.shape)
                 Bess[~mask_R] = scipy.special.j1(np.pi*R[~mask_R])*hann(R[~mask_R],image.shape[0]*mode)/(np.pi*R[~mask_R])
                 Bess[mask_R] = 0.5
                 Bess = Bess/np.sum(Bess)
                 tmp = image*Bess
-                Ib[i+s,j+s] = np.sum(tmp)*np.pi/2
+                Ib[i+s,j+s] = np.sum(tmp) #np.round(np.sum(tmp),10)
     return Ib
 
 def bessel_cost_func(vol1_org, vol2_org, thetas, axis, mask=False, smooth = False, mode = 1):
@@ -87,7 +86,7 @@ def bessel_rotate_halton(image, theta, x1, y1):
         Bess[mask_R] = 0.5
         Bess = Bess/np.sum(Bess)
         tmp = image.ravel()*Bess
-        Ib.append(np.sum(tmp)*np.pi/2)
+        Ib.append(np.round(np.sum(tmp),10))
     return np.array(Ib)
 
 def bessel_halton_cost_func(vol1_org, vol2, N, thetas, axis):
