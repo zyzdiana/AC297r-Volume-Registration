@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.special
 from cost_functions import cf_ssd,cf_L1,cf_L2
+from mask import circle_mask
 # Bilinear interplation
 def bilinear_interp(image, x, y):
     
@@ -160,7 +161,7 @@ def rotate_coords(x, y, theta, ox, oy):
     s, c = np.sin(theta), np.cos(theta)
     x, y = np.asarray(x) - ox, np.asarray(y) - oy
     return x * c - y * s + ox, x * s + y * c + oy
-
+'''
 def circle_mask(image):
     tmp = image.copy()
     ox = image.shape[1]/2.-0.5
@@ -170,7 +171,7 @@ def circle_mask(image):
     mask = x*x + y*y <= r*r
     tmp[~mask] = 0
     return tmp
-
+'''
 def bessel_rotate(image, theta):
     Ib = np.zeros(image.shape)
 
@@ -200,7 +201,10 @@ def bessel_rotate(image, theta):
     return Ib
 
 
-def imrotate(image, theta, interpolation = 'bilinear', mask=False, x=None, y=None):
+def imrotate(image_org, theta, interpolation = 'bilinear', mask=False, smooth = False, mode = 1,x=None, y=None):
+    image = image_org.copy()
+    if(mask):
+        image = circle_mask(image,smooth,mode)
     theta = to_radian(theta)
     ox = image.shape[1]/2.-0.5
     oy = image.shape[0]/2.-0.5
@@ -219,18 +223,28 @@ def imrotate(image, theta, interpolation = 'bilinear', mask=False, x=None, y=Non
         dest = bilinear_interp(image, dest_x, dest_y)
     if(interpolation == 'bessel'):
         dest = bessel_rotate(image, theta)            
-    if(mask):
-        dest = circle_mask(dest)
     return dest
 
 
-def rot_cost_func(vol1, vol2, thetas, axis, interpolation='bilinear',mask=False):
+def rot_cost_func(vol1_org, vol2_org, thetas, axis, interpolation='bilinear',mask=False,smooth=False,mode=1):
     '''
     vol1: original image
     vol2: volume to be rotated
     thetas: list of degress to try
     arg: string for plot titles
     '''
+    vol1 = vol1_org.copy()
+    vol2 = vol2_org.copy()
+
+    if(mask):
+        for i in xrange(len(vol1)):
+            if(axis == 0):
+                vol1[i,:,:] = circle_mask(vol1[i,:,:], smooth, mode)
+            elif(axis == 1):
+                vol1[:,i,:] = circle_mask(vol1[:,i,:], smooth, mode)
+            else:
+                vol1[:,:,i] = circle_mask(vol1[:,:,i], smooth, mode)
+
     cost_func = np.zeros([len(thetas),])
     for idx, t in enumerate(thetas):
         new_vol2 = np.ones(vol2.shape)
@@ -242,7 +256,7 @@ def rot_cost_func(vol1, vol2, thetas, axis, interpolation='bilinear',mask=False)
             else:
                 sub = vol2[:,:,i]
             
-            rot = imrotate(sub, t, interpolation, mask)
+            rot = imrotate(sub, t, interpolation, mask, smooth, mode)
 
             if(axis == 0):
                 new_vol2[i,:,:] = rot

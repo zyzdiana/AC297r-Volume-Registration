@@ -2,10 +2,11 @@ import numpy as np
 import scipy.special
 import ghalton
 from utils import to_radian,hann
+from cost_functions import cf_ssd
 from mask import circle_mask
 import time
 
-def bessel_rotate(image_org, theta, mask = True, smooth = False, mode = 1):
+def bessel_rotate(image_org, theta, mask = False, smooth = False, mode = 1):
     image = image_org.copy()
     if(mask):
         image = circle_mask(image, smooth, mode)
@@ -46,25 +47,27 @@ def bessel_cost_func(vol1_org, vol2_org, thetas, axis, mask=False, smooth = Fals
     vol1 = vol1_org.copy()
     vol2 = vol2_org.copy()
     cost_func = np.zeros([len(thetas),])
+    if(mask):
+        for i in xrange(len(vol1)):
+            if(axis == 0):
+                vol1[i,:,:] = circle_mask(vol1[i,:,:], smooth, mode)
+            elif(axis == 1):
+                vol1[:,i,:] = circle_mask(vol1[:,i,:], smooth, mode)
+            else:
+                vol1[:,:,i] = circle_mask(vol1[:,:,i], smooth, mode)
+
     for idx, t in enumerate(thetas):
         print t,
-        new_vol2 = np.ones(vol2.shape)
+        new_vol2 = np.zeros(vol2.shape)
         for i in xrange(len(vol2)):
             if(axis == 0):
-                new_vol2[i,:,:] = bessel_rotate(vol2[i,:,:], t, mask)
-                if(mask):
-                    vol1[i,:,:] = circle_mask(vol1[i,:,:], smooth, mode)
+                new_vol2[i,:,:] = bessel_rotate(vol2[i,:,:], t, mask, smooth, mode)
             elif(axis == 1):
-                new_vol2[:,i,:] = bessel_rotate(vol2[:,i,:], t, mask)
-                if(mask):
-                    vol1[:,i,:] = circle_mask(vol1[:,i,:], smooth, mode)
+                new_vol2[:,i,:] = bessel_rotate(vol2[:,i,:], t, mask, smooth, mode)
             else:
-                new_vol2[:,:,i] = bessel_rotate(vol2[:,:,i], t, mask)
-                if(mask):
-                    vol1[:,:,i] = circle_mask(vol1[:,:,i], smooth, mode)
-        cost_func[idx] = cf_ssd(new_vol2,vol1)
+                new_vol2[:,:,i] = bessel_rotate(vol2[:,:,i], t, mask, smooth, mode)
+        cost_func[idx] = cf_ssd(new_vol2, vol1)
     return cost_func
-
 
 
 def bessel_rotate_halton(image, theta, x1, y1):
@@ -83,11 +86,59 @@ def bessel_rotate_halton(image, theta, x1, y1):
         mask_R = (R == 0)
         Bess = np.zeros(R.shape)
         Bess[~mask_R] = scipy.special.j1(np.pi*R[~mask_R])*hann(R[~mask_R],image.shape[0])/(np.pi*R[~mask_R])
+        #Bess[~mask_R] = scipy.special.j1(np.pi*R[~mask_R])/(np.pi*R[~mask_R])
         Bess[mask_R] = 0.5
         Bess = Bess/np.sum(Bess)
         tmp = image.ravel()*Bess
-        Ib.append(np.round(np.sum(tmp),10))
+        Ib.append(np.sum(tmp)*np.pi/2)
     return np.array(Ib)
+
+def bessel_halton_cost_func_circle(vol1, vol2, N, thetas, axis, smooth = True, mode = 1):
+    '''
+    vol1: original image
+    vol2: volume to be rotated
+    thetas: list of degress to try
+    cf: cost function
+    arg: string for plot titles
+    '''
+    cost_func = np.zeros([len(thetas),])
+    # generate Halton sample points
+    s = (len(vol1)-1)/2.
+    sequencer = ghalton.GeneralizedHalton(ghalton.EA_PERMS[:3])
+    sequencer.reset()
+    points = sequencer.get(N)
+    pts = np.array(points)
+    xx1 = (len(vol1)-1) * pts[:,0] - s
+    yy1 = (len(vol1)-1) * pts[:,1] - s
+    mask = np.sqrt(xx1**2+yy1**2) < s*0.7
+    x1 = xx1[mask]
+    y1 = yy1[mask]
+    new_vol1 = np.zeros([len(vol1),len(x1)])
+    print len(x1),
+    for i in xrange(len(vol1)):
+        if(axis == 0):
+            sub1 = circle_mask(vol1[i,:,:], smooth = True, mode = 1)
+        elif(axis == 1):
+            sub1 = circle_mask(vol1[:,i,:], smooth = True, mode = 1)
+        else:
+            sub1 = circle_mask(vol1[:,:,i], smooth = True, mode = 1)
+        rot = bessel_rotate_halton(sub1, 0, x1, y1)
+        new_vol1[i] = rot
+    for idx, t in enumerate(thetas):
+        print t, 
+        new_vol2 = np.empty([len(vol2),len(x1)])
+        for i in xrange(len(vol2)):
+            if(axis==0):
+                sub2 = circle_mask(vol2[i,:,:], smooth = True, mode = 1)
+            elif(axis==1):
+                sub2 = circle_mask(vol2[:,i,:], smooth = True, mode = 1)
+            else:
+                sub2 = circle_mask(vol2[:,:,i], smooth = True, mode = 1)
+            rot = bessel_rotate_halton(sub2, t, x1, y1)
+            new_vol2[i] = rot
+        cost_func[idx] = cf_ssd(new_vol2,new_vol1)
+    return cost_func
+
 
 def bessel_halton_cost_func(vol1_org, vol2, N, thetas, axis):
     '''
@@ -129,51 +180,5 @@ def bessel_halton_cost_func(vol1_org, vol2, N, thetas, axis):
             else:
                 sub2 = circle_mask(vol2[:,:,i])
             new_vol2[i] = bessel_rotate_halton(sub2, t, x1, y1)
-        cost_func[idx] = cf_ssd(new_vol2,new_vol1)
-    return cost_func
-
-def bessel_halton_cost_func_circle(vol1, vol2, N, thetas, axis):
-    '''
-    vol1: original image
-    vol2: volume to be rotated
-    thetas: list of degress to try
-    cf: cost function
-    arg: string for plot titles
-    '''
-    cost_func = np.zeros([len(thetas),])
-    # generate Halton sample points
-    s = (len(vol1)-1)/2.
-    sequencer = ghalton.GeneralizedHalton(ghalton.EA_PERMS[:3])
-    sequencer.reset()
-    points = sequencer.get(N)
-    pts = np.array(points)
-    xx1 = (len(vol1)-1) * pts[:,0] - s
-    yy1 = (len(vol1)-1) * pts[:,1] - s
-    mask = np.sqrt(xx1**2+yy1**2) < s - 1
-    x1 = xx1[mask]
-    y1 = yy1[mask]
-    new_vol1 = np.zeros([len(vol1),len(x1)])
-    print len(x1),
-    for i in xrange(len(vol1)):
-        if(axis == 0):
-            sub1 = circle_mask(vol1[i,:,:])
-        elif(axis == 1):
-            sub1 = circle_mask(vol1[:,i,:])
-        else:
-            sub1 = circle_mask(vol1[:,:,i])
-        rot = bessel_rotate_halton(sub1, 0, x1, y1)
-        new_vol1[i] = rot
-    for idx, t in enumerate(thetas):
-        print t, 
-        new_vol2 = np.empty([len(vol2),len(x1)])
-        for i in xrange(len(vol2)):
-            if(axis==0):
-                sub2 = circle_mask(vol2[i,:,:])
-            elif(axis==1):
-                sub2 = circle_mask(vol2[:,i,:])
-            else:
-                sub2 = circle_mask(vol2[:,:,i])
-            rot = bessel_rotate_halton(sub2, t, x1, y1)
-            new_vol2[i] = rot
         cost_func[idx] = cf_ssd(new_vol2,new_vol1)
     return cost_func
