@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.special
+import scipy.interpolate
+import ghalton
 from cost_functions import cf_ssd,cf_L1,cf_L2
 from mask import circle_mask
 # Bilinear interplation
@@ -212,21 +214,24 @@ def imrotate(image_org, theta, interpolation = 'bilinear', mask=False, smooth = 
     if((x == None) and (y == None)): #i.e. x and y not specified
         x = np.linspace(0, image.shape[1]-1, image.shape[1]).astype(int)
         y = np.linspace(0, image.shape[0]-1, image.shape[0]).astype(int)
-    
-    xx, yy = np.meshgrid(x,y)
-    
-    dest_x, dest_y = rotate_coords(xx, yy, theta, ox, oy)
+        xx, yy = np.meshgrid(x,y)
+        dest_x, dest_y = rotate_coords(xx, yy, theta, ox, oy)
+    else:
+        dest_x, dest_y = rotate_coords(x, y, theta, ox, oy)
     
     if(interpolation == 'bicubic'):
         dest = bicubic_interp(image, dest_x, dest_y)
     if(interpolation == 'bilinear'):
         dest = bilinear_interp(image, dest_x, dest_y)
     if(interpolation == 'bessel'):
-        dest = bessel_rotate(image, theta)            
+        dest = bessel_rotate(image, theta) 
+    if(interpolation == 'spline'):
+        spline = scipy.interpolate.RectBivariateSpline(x, y, image)
+        dest = spline.ev(dest_y,dest_x)        
     return dest
 
 
-def rot_cost_func(vol1_org, vol2_org, thetas, axis, interpolation='bilinear',mask=False,smooth=False,mode=1):
+def rot_cost_func(vol1_org, vol2_org, thetas, axis, interpolation='bilinear', mask=False, smooth=False, mode=1, x=None, y=None):
     '''
     vol1: original image
     vol2: volume to be rotated
@@ -235,7 +240,6 @@ def rot_cost_func(vol1_org, vol2_org, thetas, axis, interpolation='bilinear',mas
     '''
     vol1 = vol1_org.copy()
     vol2 = vol2_org.copy()
-
     if(mask):
         for i in xrange(len(vol1)):
             if(axis == 0):
@@ -256,7 +260,7 @@ def rot_cost_func(vol1_org, vol2_org, thetas, axis, interpolation='bilinear',mas
             else:
                 sub = vol2[:,:,i]
             
-            rot = imrotate(sub, t, interpolation, mask, smooth, mode)
+            rot = imrotate(sub, t, interpolation, mask, smooth, mode, x, y)
 
             if(axis == 0):
                 new_vol2[i,:,:] = rot
@@ -265,4 +269,53 @@ def rot_cost_func(vol1_org, vol2_org, thetas, axis, interpolation='bilinear',mas
             else:
                 new_vol2[:,:,i] = rot
         cost_func[idx] = cf_ssd(new_vol2,vol1)
+    return cost_func
+
+
+def rot_halton_cost_func(vol1_org, vol2_org, N, thetas, axis, interpolation='bilinear', smooth = True, mode = 1):
+    '''
+    vol1: original image
+    vol2: volume to be rotated
+    thetas: list of degress to try
+    cf: cost function
+    arg: string for plot titles
+    '''
+    vol1 = vol1_org.copy()
+    vol2 = vol2_org.copy()
+
+    cost_func = np.zeros([len(thetas),])
+    # generate Halton sample points
+    s = (len(vol1)-1)/2.
+    sequencer = ghalton.GeneralizedHalton(ghalton.EA_PERMS[:3])
+    sequencer.reset()
+    points = sequencer.get(N)
+    pts = np.array(points)
+    xx1 = (len(vol1)-1) * pts[:,0] - s
+    yy1 = (len(vol1)-1) * pts[:,1] - s
+    mask = np.sqrt(xx1**2+yy1**2) < s*0.7
+    x1 = xx1[mask]
+    y1 = yy1[mask]
+    new_vol1 = np.zeros([len(vol1),len(x1)])
+    print len(x1),
+    for i in xrange(len(vol1)):
+        if(axis == 0):
+            sub1 = circle_mask(vol1[i,:,:], smooth = True, mode = 1)
+        elif(axis == 1):
+            sub1 = circle_mask(vol1[:,i,:], smooth = True, mode = 1)
+        else:
+            sub1 = circle_mask(vol1[:,:,i], smooth = True, mode = 1)
+        rot = imrotate(sub1, 0, interpolation, True, smooth, mode, x1, y1)
+        new_vol1[i] = rot
+    for idx, t in enumerate(thetas):
+        new_vol2 = np.empty([len(vol2),len(x1)])
+        for i in xrange(len(vol2)):
+            if(axis==0):
+                sub2 = circle_mask(vol2[i,:,:], smooth = True, mode = 1)
+            elif(axis==1):
+                sub2 = circle_mask(vol2[:,i,:], smooth = True, mode = 1)
+            else:
+                sub2 = circle_mask(vol2[:,:,i], smooth = True, mode = 1)
+            rot = imrotate(sub2, t, interpolation, True, smooth, mode, x1, y1)
+            new_vol2[i] = rot
+        cost_func[idx] = cf_ssd(new_vol2,new_vol1)
     return cost_func
