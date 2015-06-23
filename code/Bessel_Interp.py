@@ -90,7 +90,7 @@ def bessel_rotate_halton(image, theta, x1, y1):
         Bess[mask_R] = 0.5
         Bess = Bess/np.sum(Bess)
         tmp = image.ravel()*Bess
-        Ib.append(np.sum(tmp)*np.pi/2)
+        Ib.append(np.sum(tmp))
     return np.array(Ib)
 
 def bessel_halton_cost_func_circle(vol1, vol2, N, thetas, axis, smooth = True, mode = 1):

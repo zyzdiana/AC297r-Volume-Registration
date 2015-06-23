@@ -19,7 +19,43 @@ def get_volume_1(path, voxel):
     volume = np.memmap(path, dtype=np.complex64, mode='c', shape=(12,voxel,voxel,voxel))
     volume = np.array(np.linalg.norm(volume,axis=0))
     return volume
-
+    
+def get_data_dict():
+    path = '/Users/zyzdiana/Dropbox/vNav_Test_Data/Apr_17_test_data/'
+    dict_10mm = {}
+    dict_6_4mm = {}
+    dict_8mm = {}
+    for root, dirs, files in os.walk(path):
+        if len(dirs)==0:
+            if('10mm' in root):
+                dict_10mm[root] = clean(files)
+            if('6_4mm' in root):
+                dict_6_4mm[root] = clean(files)
+            if('8mm' in root):
+                dict_8mm[root] = clean(files)
+    keys_10 = sorted(dict_10mm.keys())
+    keys_8 = sorted(dict_8mm.keys())
+    keys_6_4 = sorted(dict_6_4mm.keys())
+    dict_3res = {}
+    dict_3res['6_4mm'] = {}
+    dict_3res['8mm'] = {}
+    dict_3res['10mm'] = {}
+    for i in xrange(5):
+        dict_3res['10mm'][idx_to_key(i, keys_10).split('/')[-1][5:]] = []
+        dict_3res['8mm'][idx_to_key(i, keys_8).split('/')[-1][5:]] = []
+        dict_3res['6_4mm'][idx_to_key(i, keys_6_4).split('/')[-1][5:]] = []
+        for j in xrange(5):
+            # 10mm
+            path = os.path.join(idx_to_key(i, keys_10),dict_10mm[idx_to_key(i, keys_10)][j])
+            dict_3res['10mm'][idx_to_key(i, keys_10).split('/')[-1][5:]].append(get_volume_1(path, 26))
+            # 8mm
+            path = os.path.join(idx_to_key(i, keys_8),dict_8mm[idx_to_key(i, keys_8)][j])
+            dict_3res['8mm'][idx_to_key(i, keys_8).split('/')[-1][5:]].append(get_volume_1(path, 32))
+            # 6.4mm
+            path = os.path.join(idx_to_key(i, keys_6_4),dict_6_4mm[idx_to_key(i, keys_6_4)][j])
+            dict_3res['6_4mm'][idx_to_key(i, keys_6_4).split('/')[-1][5:]].append(get_volume_1(path, 40))
+    return dict_3res
+    
 def get_data_all():
     path = '/Users/zyzdiana/Dropbox/vNav_Test_Data/Apr_17_test_data/'
     dict_10mm = {}
