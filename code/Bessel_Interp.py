@@ -138,11 +138,11 @@ def bessel_halton_cost_func(vol1, vol2, N, thetas, axis):
         new_vol2 = np.empty([len(vol2),N])
         for i in xrange(len(vol2)):
 			if(axis == 0):
-				sub2 = vol1[i,:,:]
+				sub2 = vol2[i,:,:]
 			elif(axis == 1):
-				sub2 = vol1[:,i,:]
+				sub2 = vol2[:,i,:]
 			else:
-				sub2 = vol1[:,:,i]
+				sub2 = vol2[:,:,i]
 			new_vol2[i] = bessel_rotate_arbitrary_points(sub2, t, x1, y1)
         cost_func[idx] = cf_ssd(new_vol2,new_vol1)
     return cost_func
