@@ -2,7 +2,7 @@ from sys import exit
 import numpy as np
 import scipy.special
 import ghalton
-from utils import to_radian,hann
+from utils import to_radian,hann,hann_unsafe
 from cost_functions import cf_ssd
 from mask import circle_mask
 import time
@@ -75,7 +75,7 @@ def bessel_rotate_arbitrary_points(image, theta, x1, y1):
 	Ib = []
 	theta = to_radian(theta)
 	s = (image.shape[0]-1)/2.0
-	
+		
 	rM = np.array([[np.cos(theta), -np.sin(theta)],[np.sin(theta), np.cos(theta)]])
 	rotatedImagePoints = []
 	for i in np.arange(-s,s+1.0, 1.0):
@@ -88,7 +88,6 @@ def bessel_rotate_arbitrary_points(image, theta, x1, y1):
 		R = np.sqrt((rotatedImagePoints[:,0]-x1[idx])**2 + (rotatedImagePoints[:,1]-y1[idx])**2)
 		mask_R = (R == 0)
 		Bess = np.zeros(R.shape)
-		#Bess[~mask_R] = scipy.special.j1(np.pi*R[~mask_R])*hann(R[~mask_R],image.shape[0])/(np.pi*R[~mask_R])
 		Bess[~mask_R] = scipy.special.j1(np.pi*R[~mask_R])/(np.pi*R[~mask_R])
 		Bess[mask_R] = 0.5
 		# mdt Jun 25/15 Moved this division to after the summation; no need to
@@ -100,6 +99,38 @@ def bessel_rotate_arbitrary_points(image, theta, x1, y1):
 		Ib.append(np.dot(image.ravel(), Bess) / np.sum(Bess))
 	return np.array(Ib)
 
+
+def generate_hann_windowed_bessel_rotate_arbitrary_points_interpolator(window_radius):
+
+	def hann_windowed_bessel_rotate_arbitrary_points(image, theta, x1, y1):
+		Ib = []
+		theta = to_radian(theta)
+		s = (image.shape[0]-1)/2.0
+	
+		def radial_interp_func(r):
+			if r  == 0:
+				return 0.5
+			
+			return hann(r, window_radius) * scipy.special.j1(np.pi*r)/(np.pi*r)
+	
+		
+		rM = np.array([[np.cos(theta), -np.sin(theta)],[np.sin(theta), np.cos(theta)]])
+		rotatedImagePoints = []
+		for i in np.arange(-s,s+1.0, 1.0):
+			for j in np.arange(-s,s+1.0, 1.0):
+				rotatedImagePoints.append(np.dot(rM, np.array([i,j])))
+		rotatedImagePoints = np.array(rotatedImagePoints)
+		for idx in xrange(len(x1)):
+			R = np.sqrt((rotatedImagePoints[:,0]-x1[idx])**2 + (rotatedImagePoints[:,1]-y1[idx])**2)
+			mask_origin_R = (R == 0)
+			mask_inner_R = (R < window_radius) & ~mask_origin_R
+			Bess = np.zeros(R.shape)
+			Bess[mask_inner_R] = hann_unsafe(R[mask_inner_R], window_radius) * scipy.special.j1(np.pi*R[mask_inner_R])/(np.pi*R[mask_inner_R]) 
+			Bess[mask_origin_R] = 0.5
+			Ib.append(np.dot(image.ravel(), Bess) / np.sum(Bess))
+		return np.array(Ib)
+	return hann_windowed_bessel_rotate_arbitrary_points
+
 def generate_halton_points(N, dims, image_width):	
     # generate Halton sample points
     sequencer = ghalton.Halton(dims)
@@ -110,7 +141,12 @@ def generate_halton_points(N, dims, image_width):
 #    return image_width * pts - image_width / 2 
     return float(image_width) * pts - (image_width / 2.0) 
 
-def bessel_halton_cost_func(vol1, vol2, N, thetas, axis):
+def circle_mask_points(pts, radius):	
+	mask = [np.linalg.norm(x) < radius for x in pts]
+	return pts[mask]
+
+
+def interp_rotate_2D_arbitrary_points_cost_func(vol1, vol2, interp, pts, thetas, axis):
     '''
     vol1: original image
     vol2: volume to be rotated
@@ -120,10 +156,9 @@ def bessel_halton_cost_func(vol1, vol2, N, thetas, axis):
     '''
     # initialize vector to store cost
     cost_func = np.zeros([len(thetas),])
-    pts = generate_halton_points(N,2,len(vol1)-1)
     x1 = pts[:,0] 
     y1 = pts[:,1] 
-    new_vol1 = np.empty([len(vol1),N])
+    new_vol1 = np.empty([len(vol1),pts.shape[0]])
     for i in xrange(len(vol1)):
 		if(axis == 0):
 			sub1 = vol1[i,:,:]
@@ -132,10 +167,10 @@ def bessel_halton_cost_func(vol1, vol2, N, thetas, axis):
 		else:
 			sub1 = vol1[:,:,i]
 		
-		new_vol1[i] = bessel_rotate_arbitrary_points(sub1, 0, x1, y1)
+		new_vol1[i] = interp(sub1, 0, x1, y1)
     for idx, t in enumerate(thetas):
         #print t, 
-        new_vol2 = np.empty([len(vol2),N])
+        new_vol2 = np.empty([len(vol2),pts.shape[0]])
         for i in xrange(len(vol2)):
 			if(axis == 0):
 				sub2 = vol2[i,:,:]
@@ -143,9 +178,22 @@ def bessel_halton_cost_func(vol1, vol2, N, thetas, axis):
 				sub2 = vol2[:,i,:]
 			else:
 				sub2 = vol2[:,:,i]
-			new_vol2[i] = bessel_rotate_arbitrary_points(sub2, t, x1, y1)
+			new_vol2[i] = interp(sub2, t, x1, y1)
         cost_func[idx] = cf_ssd(new_vol2,new_vol1)
     return cost_func
+
+def bessel_halton_cost_func(vol1, vol2, N, thetas, axis):
+	return interp_rotate_2D_arbitrary_points_cost_func(vol1, vol2, bessel_rotate_arbitrary_points, generate_halton_points(N, 2, len(vol1) - 1), thetas, axis)	
+
+def bessel_halton_in_circ_cost_func(vol1, vol2, radius, N, thetas, axis):
+	pts = generate_halton_points(N * 2, 2, len(vol1) - 1)
+	pts = circle_mask_points(pts, radius)
+	return interp_rotate_2D_arbitrary_points_cost_func(vol1, vol2, bessel_rotate_arbitrary_points, pts[:N], thetas, axis)	
+
+def hann_windowed_bessel_halton_in_circ_cost_func(vol1, vol2, point_mask_radius, N, interp_window_radius, thetas, axis):
+	pts = generate_halton_points(N * 2, 2, len(vol1) - 1)
+	pts = circle_mask_points(pts, point_mask_radius)
+	return interp_rotate_2D_arbitrary_points_cost_func(vol1, vol2, generate_hann_windowed_bessel_rotate_arbitrary_points_interpolator(interp_window_radius), pts[:N], thetas, axis)
 
 
 def bessel_halton_cost_func_circle(vol1, vol2, N, thetas, axis, smooth = True, mode = 1):

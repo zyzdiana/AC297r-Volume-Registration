@@ -35,6 +35,12 @@ def to_radian(theta):
 '''
 Helper function that calculates the Hann window function
 '''
-def hann(n, N):
-    n = abs(n - (N-1.)/2.)
-    return 0.5*(1-np.cos(2*np.pi*n/(N-1)))
+def hann(n, radius):
+	if n > radius:
+		return 0
+	else:
+		return 0.5 + 0.5 * np.cos((np.pi*n)/float(radius))
+
+
+def hann_unsafe(n, radius):
+	return 0.5 + 0.5 * np.cos((np.pi*n)/float(radius))
