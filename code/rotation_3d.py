@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.special
 from cost_functions import cf_ssd,cf_L1,cf_L2
-
+from mask import sphere_mask
 # Trilinear interplation
 def trilinear_interp(volume, x, y, z):
     x = np.asarray(x)
@@ -81,24 +81,11 @@ def rotate_coords_3d(x, y, z, gamma, beta, alpha, ox, oy, oz):
             (R[1][0]*x + R[1][1]*y + R[1][2]*z) + oy, 
             (R[2][0]*x + R[2][1]*y + R[2][2]*z) + oz)
 
-def sphere_mask(volume):
-    
-    ox = volume.shape[1]/2.-0.5
-    oy = volume.shape[0]/2.-0.5
-    oz = volume.shape[2]/2.-0.5
-    
-    r = len(volume)/2.-0.5
-    
-    x,y,z = np.ogrid[-ox:volume.shape[1]-ox, -oy:volume.shape[0]-oy,-oz:volume.shape[2]-oz]
-    mask = (x*x + y*y + z*z <= r*r)
-    vol = np.array(volume)
-    vol[~mask] = 0
-    return vol  
-
-def volrotate(volume, gamma, beta, alpha, mask=False):
+def volrotate(volume_org, gamma, beta, alpha):
     #about x axis by gamma degrees
     #about y axis by beta degrees
     #about z axis by alpha degrees
+    volume = volume_org.copy()
     
     # find center of the volume
     ox = volume.shape[1]/2.-0.5
@@ -112,8 +99,6 @@ def volrotate(volume, gamma, beta, alpha, mask=False):
     
     dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, gamma, beta, alpha, ox, oy, oz)
     dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
-    if(mask):
-        dest = sphere_mask(dest)
     return dest
 
 
@@ -124,11 +109,8 @@ def rot_cost_func_3d(vol1, vol2, thetas, mask=False):
     thetas: list of degress to try
     arg: string for plot titles
     '''
-    cost_func = np.zeros([len(thetas),3])
-
+    cost_func = np.zeros([len(thetas),])
     for idx, t in enumerate(thetas):
-        new_vol2 = volrotate(vol2, t[0],t[1],t[2], mask)
-        cost_func[idx,0] = cf_ssd(new_vol2,vol1)
-        cost_func[idx,1] = cf_L1(new_vol2,vol1)
-        cost_func[idx,2] = cf_L2(new_vol2,vol1)
+        new_vol2 = volrotate(vol2, t[0],t[1],t[2])
+        cost_func[idx] = cf_ssd(new_vol2,vol1)
     return cost_func
