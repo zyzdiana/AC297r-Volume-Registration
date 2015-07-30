@@ -4,6 +4,25 @@ import theano
 import theano.tensor as T
 rng = np.random.RandomState(42)
 theano.config.floatX = 'float32'
+
+def transform(volume, angles, t, size):
+    R = rotation_matrix_zyx(angles[0],angles[1],angles[2])
+    # find center of the volume
+    ox = volume.shape[1]/2.-0.5
+    oy = volume.shape[0]/2.-0.5
+    oz = volume.shape[2]/2.-0.5
+        
+    tmpx = np.linspace(0, size-1, size).astype(int)
+    tmpy = np.linspace(0, size-1, size).astype(int)
+    tmpz = np.linspace(0, size-1, size).astype(int)
+    xx, yy, zz = np.meshgrid(tmpx, tmpx, tmpx)
+    x, y, z = xx - ox, yy - oy, zz - oz
+    dest_x, dest_y, dest_z = ((R[0][0]*x + R[0][1]*y + R[0][2]*z) + ox + t[0], 
+                              (R[1][0]*x + R[1][1]*y + R[1][2]*z) + oy + t[1], 
+                              (R[2][0]*x + R[2][1]*y + R[2][2]*z) + oz + t[2])
+    dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
+    return dest
+
 def transform_10mm(volume,R,t):
         
     # find center of the volume
@@ -108,7 +127,7 @@ def to_radian(theta):
     Convert theta from degrees to radians
     '''
     return theta*np.pi/180.
-
+'''
 def rotation_matrix_zyx(gamma, beta, alpha):
     """
     Return the rotation matrix associated with counterclockwise rotation 
@@ -125,3 +144,21 @@ def rotation_matrix_zyx(gamma, beta, alpha):
     ry = np.array([[np.cos(beta),0, np.sin(beta)],[0, 1, 0],[-np.sin(beta),0,np.cos(beta)]])
     rx = np.array([[1,0,0],[0,np.cos(gamma),-np.sin(gamma)],[0,np.sin(gamma),np.cos(gamma)]])
     return (rz.dot(ry)).dot(rx)
+'''
+def rotation_matrix_zyx(gamma, beta, alpha):
+    """
+    Return the rotation matrix associated with counterclockwise rotation 
+    about x axis by gamma degrees
+    about y axis by beta degrees
+    about z axis by alpha degrees
+    """
+    # convert degrees to radians
+    gamma = to_radian(gamma)
+    beta = to_radian(beta)
+    alpha = to_radian(alpha)
+    
+    rz = np.array([[T.cos(alpha),-T.sin(alpha),0],[T.sin(alpha),T.cos(alpha),0],[0,0,1]])
+    ry = np.array([[T.cos(beta),0, T.sin(beta)],[0, 1, 0],[-T.sin(beta),0,T.cos(beta)]])
+    rx = np.array([[1,0,0],[0,T.cos(gamma),-T.sin(gamma)],[0,T.sin(gamma),T.cos(gamma)]])
+    return (rz.dot(ry)).dot(rx)
+    
