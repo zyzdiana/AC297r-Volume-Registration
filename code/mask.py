@@ -23,8 +23,19 @@ def circle_mask(image_org, smooth = True, mode = 1):
     return image
     
 def sphere_mask(volume, radius):
+    ox = volume.shape[1]/2.-0.5
+    oy = volume.shape[0]/2.-0.5
+    oz = volume.shape[2]/2.-0.5
+    
+    r = len(volume)/2.-0.5
+    
+    x,y,z = np.ogrid[-ox:volume.shape[1]-ox, -oy:volume.shape[0]-oy,-oz:volume.shape[2]-oz]
+    mask = (x*x + y*y + z*z <= r*r)
+    vol = np.array(volume)
+    vol[~mask] = 0
     origin = np.array([(x - 1.0) / 2.0 for x in volume.shape])
 
-    mask = np.array([[[hann(np.linalg.norm(np.array([x,y,z]) - origin), radius) for x in range(volume.shape[0])] for y in range(volume.shape[1])] for z in range(volume.shape[2])])
+    mask_frequency = np.array([[[hann(np.linalg.norm(np.array([x,y,z]) - origin), radius) for x in range(volume.shape[0])] for y in range(volume.shape[1])] for z in range(volume.shape[2])])
 
-    return mask * volume
+    return mask_frequency * vol
+
