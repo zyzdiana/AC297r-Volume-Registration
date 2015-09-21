@@ -203,13 +203,15 @@ def bessel_rotate(image, theta):
     return Ib
 
 
-def imrotate(image_org, theta, interpolation = 'bilinear', mask=False, smooth = False, mode = 1,x=None, y=None):
+def imrotate(image_org, theta, interpolation = 'bilinear', mask=False, smooth = False, mode = 1,x=None, y=None,ox=0.,oy=0.):
     image = image_org.copy()
     if(mask):
         image = circle_mask(image,smooth,mode)
     theta = to_radian(theta)
-    ox = image.shape[1]/2.-0.5
-    oy = image.shape[0]/2.-0.5
+    if(ox == 0.):
+        ox = image.shape[1]/2.-0.5
+    if(oy == 0.):
+        oy = image.shape[0]/2.-0.5
     
     if((x == None) and (y == None)): #i.e. x and y not specified
         x = np.linspace(0, image.shape[1]-1, image.shape[1]).astype(int)
