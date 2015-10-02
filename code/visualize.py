@@ -19,6 +19,15 @@ def plot_volumes(files):
 	plt.show()
 	plt.close(fig)
 
+def plot_volume(volume, res, rot=''):
+    fig, ax = plt.subplots(1,3)
+    fig.set_figheight(3)
+    fig.set_figwidth(10)
+    [ax[i].imshow(volume.max(axis=i), interpolation = 'None',cmap='gray') for i in xrange(3)]
+    plt.suptitle(res+'_'+rot, fontsize=20)
+    plt.show()
+    plt.close(fig)
+
 def plot_cost_func_all(thetas,cost_func,res,interp):
 	# plot the cost function and find the minimum angle
     fig, ax = plt.subplots(1,3)
@@ -35,11 +44,20 @@ def plot_cost_func_all(thetas,cost_func,res,interp):
     plt.show()
     plt.close(fig)
     
-def plot_cost_func(thetas,cost_func,res,interp,rot, coil):
+def plot_cost_func(thetas,cost_func,res,interp,rot, coil='body'):
     # plot the cost function and find the minimum angle
     angMin = thetas[np.argmin(cost_func,axis=0)]
     plt.plot(thetas,cost_func,label='Min angle = %s\n Resolution = %s \n rotation = %s' % (angMin, res, rot))
     plt.title('SSD with %s interpolation, %s coil' % (interp,coil), fontsize=14)
     plt.xlabel('Angle (degrees)')
+    plt.ylabel('Cost function')
+    plt.legend(loc='best')
+
+def plot_cost_func_t(trans,cost_func,res,trans_ax, coil='body'):
+    # plot the cost function and find the minimum angle
+    transMin = trans[np.argmin(cost_func,axis=0)]*int(res[:-2])
+    plt.plot(trans,cost_func,label='Min translation = %s\n Resolution = %s \n translation = %s' % (transMin, res,trans_ax))
+    plt.title('SSD for Translation, %s coil' % (coil), fontsize=14)
+    plt.xlabel('Translation (Voxel)')
     plt.ylabel('Cost function')
     plt.legend(loc='best')

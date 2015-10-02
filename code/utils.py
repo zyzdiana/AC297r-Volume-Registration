@@ -56,3 +56,31 @@ def res_to_rad(res):
         return 32/2
     if(res == '10mm'):
         return 26/2
+
+# function to help convert rotation axis to the unit vector of rotation
+def ax_to_w(rot_ax):
+    '''
+    rot_ax: roation axis
+    wx,wy,wz: corresponding vector of rotation for the code implementation
+    '''
+    if(rot_ax == 'x'): wx,wy,wz = 0,1,0
+    elif(rot_ax == 'y'): wx,wy,wz = 1,0,0
+    elif(rot_ax == 'z'): wx,wy,wz = 0,0,1
+    elif(rot_ax == 'xy'): wx,wy,wz = 1,1,0
+    elif(rot_ax == 'xz'): wx,wy,wz = 0,1,1
+    else: wx,wy,wz = 1,0,1
+    return wx,wy,wz
+
+def rep_to_angle(rep, rot_range):
+    counter = rep % 6
+    rotation_angle = 0.0
+    translation_step = rep / 6 
+
+    if rot_range == '0_5_to_2_5':
+        if(counter != 0):
+            rotation_angle = 0.5 * counter
+    else: 
+        # range = 3.0 to 5.0
+        if(counter != 0):
+            rotation_angle = 3.0 + (0.5 * (counter - 1))
+    return rotation_angle, translation_step

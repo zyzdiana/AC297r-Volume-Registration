@@ -2,6 +2,8 @@ import numpy as np
 import scipy.special
 from cost_functions import cf_ssd,cf_L1,cf_L2
 from mask import sphere_mask
+import cPickle as pickle
+
 X_inv =np.array([
 ( 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 ( 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -474,14 +476,13 @@ def rotation_matrix_zyx(gamma, beta, alpha):
     rx = np.array([[1,0,0],[0,np.cos(gamma),-np.sin(gamma)],[0,np.sin(gamma),np.cos(gamma)]])
     return (rz.dot(ry)).dot(rx)
 
-
+'''
+# Rotate the coordinates using rotation matrix
 def rotate_coords_3d(x, y, z, gamma, beta, alpha, ox, oy, oz):
-    """
     Rotate arrays of coordinates x, y and z about the point (ox, oy, oz)
     about x axis by gamma degrees
     about y axis by beta degrees
     about z axis by alpha degrees
-    """
 
     R = rotation_matrix_zyx(gamma, beta, alpha)
     #tmp = np.vstack([a,np.zeros([1,3])])
@@ -489,11 +490,28 @@ def rotate_coords_3d(x, y, z, gamma, beta, alpha, ox, oy, oz):
     return ((R[0][0]*x + R[0][1]*y + R[0][2]*z) + ox, 
             (R[1][0]*x + R[1][1]*y + R[1][2]*z) + oy, 
             (R[2][0]*x + R[2][1]*y + R[2][2]*z) + oz)
+'''
+# Rotate the coordinates using axis-angle rotation
+def rotate_coords_3d(x, y, z, theta, wx, wy, wz, ox,oy,oz):
+    theta = to_radian(theta)
+    # make sure w is a unit vetor:
+    if (wx**2 + wy**2 + wz**2 != 1):
+        norm = np.sqrt(wx**2 + wy**2 + wz**2)
+        wx = wx/norm
+        wy = wy/norm
+        wz = wz/norm
+    s,c = np.sin(theta),np.cos(theta)
+    x, y, z = x - ox, y - oy, z - oz
+    rotx = c*x+s*(wy*z-wz*y)+(1-c)*(wx*x+wy*y+wz*z)*wx + ox
+    roty = c*y+s*(wz*x-wx*z)+(1-c)*(wx*x+wy*y+wz*z)*wy + oy
+    rotz = c*z+s*(wx*y-wy*x)+(1-c)*(wx*x+wy*y+wz*z)*wz + oz
+    return (rotx,roty,rotz)
 
-def volrotate(volume_org, gamma, beta, alpha, interpolation='trilinear'):
-    #about x axis by gamma degrees
-    #about y axis by beta degrees
-    #about z axis by alpha degrees
+def volrotate(volume_org, theta, wx, wy, wz, interpolation='trilinear'):
+    '''
+    wx, wy, wz is the unit vector describing the axis of rotation
+    theta is the rotation angle
+    '''
     volume = volume_org.copy()
     shape = volume.shape
     # find center of the volume
@@ -501,12 +519,13 @@ def volrotate(volume_org, gamma, beta, alpha, interpolation='trilinear'):
     oy = shape[0]/2.-0.5
     oz = shape[2]/2.-0.5
     
-    x = np.linspace(0, shape[1]-1, shape[1]).astype(int)
-    y = np.linspace(0, shape[0]-1, shape[0]).astype(int)
-    z = np.linspace(0, shape[2]-1, shape[2]).astype(int)
-    xx, yy, zz = np.meshgrid(x, y, z)
+    if(shape[0] == 26): res = '10mm'
+    elif(shape[0] == 32): res = '8mm'
+    else: res = '6_4mm'
+
+    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     
-    dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, gamma, beta, alpha, ox, oy, oz)
+    dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
     if(interpolation == 'trilinear'):
         dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
     if(interpolation == 'tricubic'):
@@ -519,7 +538,7 @@ def volrotate(volume_org, gamma, beta, alpha, interpolation='trilinear'):
     return dest
 
 
-def rot_cost_func_3d(vol1, vol2, thetas, interpolation = 'trilinear'):
+def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz,interpolation = 'trilinear'):
     '''
     vol1: original image
     vol2: volume to be rotated
@@ -528,6 +547,6 @@ def rot_cost_func_3d(vol1, vol2, thetas, interpolation = 'trilinear'):
     '''
     cost_func = np.zeros([len(thetas),])
     for idx, t in enumerate(thetas):
-        new_vol2 = volrotate(vol2, t[0],t[1],t[2],interpolation)
+        new_vol2 = volrotate(vol2,t,wx,wy,wz,interpolation)
         cost_func[idx] = cf_ssd(new_vol2,vol1)
     return cost_func
