@@ -19,7 +19,7 @@ ax_to_idx = {}
 for rot_ax in rot_axes:
     ax_to_idx[rot_ax] = rot_axes.index(rot_ax)
 
-def plot_results(cost_dict, res, interpolation):
+def plot_results(cost_dict, res, interpolation,step_size = 0.1):
     ranges = ['0_5_to_2_5','3_0_to_5_0']
     for idx, rot_ax in enumerate( ['xz', 'y', 'yz', 'xy', 'x', 'z']):
         for rot_range in ranges:
@@ -30,7 +30,7 @@ def plot_results(cost_dict, res, interpolation):
                     rot_angle = rep_to_angle(rep,rot_range)
                     deg = rot_angle[0]
                     if interpolation == 'cubic':
-                        thetas = np.arange(-deg-2,deg+2,0.01)
+                        thetas = np.arange(deg-3,deg+3,step_size)
                     else:
                         thetas = np.arange(deg-3,deg+3,0.01)
                     rot = '%s_%s' % (str(rot_angle[0]),rot_ax)
@@ -134,7 +134,7 @@ def scatter_plot_all_linear(axes, cost_dict_10, cost_dict_8, cost_dict_6_4,figsi
     plt.show() 
 
 
-def error_in_time(cost_dict, res):
+def error_in_time(cost_dict, res, step_size = 0.01):
     colors = ['red','blue','green','orange','brown','purple']
     ranges = ['0_5_to_2_5','3_0_to_5_0']
     errors = []
@@ -147,7 +147,7 @@ def error_in_time(cost_dict, res):
                     rep = i + loop * 6
                     rot_angle = rep_to_angle(rep,rot_range)
                     deg = rot_angle[0]
-                    thetas = np.arange(deg-3,deg+3,0.01)
+                    thetas = np.arange(deg-3,deg+3,step_size)
                     cost = cost_dict[ax_to_idx[rot_ax]][rot_angle]
                     y = abs(thetas[np.argmin(cost,axis=0)])
                     plt.scatter(rep, abs(y-deg), lw=0,s = 50, c = colors[ax_to_idx[rot_ax]],alpha = 0.6,marker='o')
