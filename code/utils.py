@@ -64,11 +64,11 @@ def ax_to_w(rot_ax):
     wx,wy,wz: corresponding vector of rotation for the code implementation
     '''
     if(rot_ax == 'x'): wx,wy,wz = 0,1,0
-    elif(rot_ax == 'y'): wx,wy,wz = 1,0,0
-    elif(rot_ax == 'z'): wx,wy,wz = 0,0,1
-    elif(rot_ax == 'xy'): wx,wy,wz = 1,1,0
-    elif(rot_ax == 'xz'): wx,wy,wz = 0,1,1
-    else: wx,wy,wz = 1,0,1
+    elif(rot_ax == 'y'): wx,wy,wz = -1,0,0
+    elif(rot_ax == 'z'): wx,wy,wz = 0,0,-1
+    elif(rot_ax == 'xy'): wx,wy,wz = -1,1,0
+    elif(rot_ax == 'xz'): wx,wy,wz = 0,1,-1
+    else: wx,wy,wz = -1,0,-1
     return wx,wy,wz
 
 def rep_to_angle(rep, rot_range):

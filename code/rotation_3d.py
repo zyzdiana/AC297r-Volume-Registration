@@ -143,7 +143,153 @@ def get_target_Y(x, y, z):
     Y[:,63] = x**3*y**3*z**3
     return Y
 
+def get_tricubic_cache(volume):
+    shape = volume.shape
+    dest = np.empty(shape)
+    tricubic_dict = {}
+    for x1 in xrange(shape[0]):
+        for y1 in xrange(shape[1]):
+            for z1 in xrange(shape[2]):
+                # Take care of boundary conditions
+                x0 = x1 - 1
+                x2 = x1 + 1
+                x3 = x2 + 1
+                y0 = y1 - 1
+                y2 = y1 + 1
+                y3 = y2 + 1
+                z0 = z1 - 1
+                z2 = z1 + 1
+                z3 = z2 + 1
+
+                x0 = np.clip(x0, 0, volume.shape[1]-1)
+                x1 = np.clip(x1, 0, volume.shape[1]-1)
+                x2 = np.clip(x2, 0, volume.shape[1]-1)
+                x3 = np.clip(x3, 0, volume.shape[1]-1)
+                y0 = np.clip(y0, 0, volume.shape[0]-1)
+                y1 = np.clip(y1, 0, volume.shape[0]-1)
+                y2 = np.clip(y2, 0, volume.shape[0]-1)
+                y3 = np.clip(y3, 0, volume.shape[0]-1)
+                z0 = np.clip(z0, 0, volume.shape[2]-1)
+                z1 = np.clip(z1, 0, volume.shape[2]-1)
+                z2 = np.clip(z2, 0, volume.shape[2]-1)
+                z3 = np.clip(z3, 0, volume.shape[2]-1)
+
+                # compute the vector of coefficients A
+                # first compute vector Y from known points to solve for A
+                Y = np.zeros([64,])
+                # values of f(x,y,z) at each corner.
+                Y[0] = volume[y1,x1,z1]
+                Y[1] = volume[y1,x2,z1]
+                Y[2] = volume[y2,x1,z1]
+                Y[3] = volume[y2,x2,z1]
+                Y[4] = volume[y1,x1,z2]
+                Y[5] = volume[y1,x2,z2]
+                Y[6] = volume[y2,x1,z2]
+                Y[7] = volume[y2,x2,z2]
+
+                # values of df/dx at each corner.
+                Y[8] = ((volume[y1,x2,z1]-volume[y1,x0,z1])/2.)
+                Y[9] = ((volume[y1,x3,z1]-volume[y1,x1,z1])/2.)
+                Y[10] = ((volume[y2,x2,z1]-volume[y2,x0,z1])/2.)
+                Y[11] = ((volume[y2,x3,z1]-volume[y2,x1,z1])/2.)
+                Y[12] = ((volume[y1,x2,z2]-volume[y1,x0,z2])/2.)
+                Y[13] = ((volume[y1,x3,z2]-volume[y1,x1,z2])/2.)
+                Y[14] = ((volume[y2,x2,z2]-volume[y2,x0,z2])/2.)
+                Y[15] = ((volume[y2,x3,z2]-volume[y2,x1,z2])/2.)
+
+                # values of df/dy at each corner.
+                Y[16] = ((volume[y2,x1,z1]-volume[y0,x1,z1])/2.)
+                Y[17] = ((volume[y2,x2,z1]-volume[y0,x2,z1])/2.)
+                Y[18] = ((volume[y3,x1,z1]-volume[y1,x1,z1])/2.)
+                Y[19] = ((volume[y3,x2,z1]-volume[y1,x2,z1])/2.)
+                Y[20] = ((volume[y2,x1,z2]-volume[y0,x1,z2])/2.)
+                Y[21] = ((volume[y2,x2,z2]-volume[y0,x2,z2])/2.)
+                Y[22] = ((volume[y3,x1,z2]-volume[y1,x1,z2])/2.)
+                Y[23] = ((volume[y3,x2,z2]-volume[y1,x2,z2])/2.)
+
+                # values of df/dz at each corner.
+                Y[24] = ((volume[y1,x1,z2]-volume[y1,x1,z0])/2.)
+                Y[25] = ((volume[y1,x2,z2]-volume[y1,x2,z0])/2.)
+                Y[26] = ((volume[y2,x1,z2]-volume[y2,x1,z0])/2.)
+                Y[27] = ((volume[y2,x2,z2]-volume[y2,x2,z0])/2.)
+                Y[28] = ((volume[y1,x1,z3]-volume[y1,x1,z1])/2.)
+                Y[29] = ((volume[y1,x2,z3]-volume[y1,x2,z1])/2.)
+                Y[30] = ((volume[y2,x1,z3]-volume[y2,x1,z1])/2.)
+                Y[31] = ((volume[y2,x2,z3]-volume[y2,x2,z1])/2.)
+
+                # values of d2f/dxdy at each corner.
+                Y[32] = ((volume[y2,x2,z1]-volume[y2,x0,z1]-volume[y0,x2,z1]+volume[y0,x0,z1])/4.)
+                Y[33] = ((volume[y2,x3,z1]-volume[y2,x1,z1]-volume[y0,x3,z1]+volume[y0,x1,z1])/4.)
+                Y[34] = ((volume[y3,x2,z1]-volume[y3,x0,z1]-volume[y1,x2,z1]+volume[y1,x0,z1])/4.)
+                Y[35] = ((volume[y3,x3,z1]-volume[y3,x1,z1]-volume[y1,x3,z1]+volume[y1,x1,z1])/4.)
+                Y[36] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y0,x2,z2]+volume[y0,x0,z2])/4.)
+                Y[37] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y0,x3,z2]+volume[y0,x1,z2])/4.)
+                Y[38] = ((volume[y3,x2,z2]-volume[y3,x0,z2]-volume[y1,x2,z2]+volume[y1,x0,z2])/4.)
+                Y[39] = ((volume[y3,x3,z2]-volume[y3,x1,z2]-volume[y1,x3,z2]+volume[y1,x1,z2])/4.)
+
+                # values of d2f/dxdz at each corner.
+                Y[40] = ((volume[y1,x2,z2]-volume[y1,x0,z2]-volume[y1,x2,z0]+volume[y1,x0,z0])/4.)
+                Y[41] = ((volume[y1,x3,z2]-volume[y1,x1,z2]-volume[y1,x3,z0]+volume[y1,x1,z0])/4.)
+                Y[42] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y2,x2,z0]+volume[y2,x0,z0])/4.)
+                Y[43] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y2,x3,z0]+volume[y2,x1,z0])/4.)
+                Y[44] = ((volume[y1,x2,z3]-volume[y1,x0,z3]-volume[y1,x2,z1]+volume[y1,x0,z1])/4.)
+                Y[45] = ((volume[y1,x3,z3]-volume[y1,x1,z3]-volume[y1,x3,z1]+volume[y1,x1,z1])/4.)
+                Y[46] = ((volume[y2,x2,z3]-volume[y2,x0,z3]-volume[y2,x2,z1]+volume[y2,x0,z1])/4.)
+                Y[47] = ((volume[y2,x3,z3]-volume[y2,x1,z3]-volume[y2,x3,z1]+volume[y2,x1,z1])/4.)
+
+                # values of d2f/dydz at each corner.
+                Y[48] = ((volume[y2,x1,z2]-volume[y0,x1,z2]-volume[y2,x1,z0]+volume[y0,x1,z0])/4.)
+                Y[49] = ((volume[y2,x2,z2]-volume[y0,x2,z2]-volume[y2,x2,z0]+volume[y0,x2,z0])/4.)
+                Y[50] = ((volume[y3,x1,z2]-volume[y1,x1,z2]-volume[y3,x1,z0]+volume[y1,x1,z0])/4.)
+                Y[51] = ((volume[y3,x2,z2]-volume[y1,x2,z2]-volume[y3,x2,z0]+volume[y1,x2,z0])/4.)
+                Y[52] = ((volume[y2,x1,z3]-volume[y0,x1,z3]-volume[y2,x1,z1]+volume[y0,x1,z1])/4.)
+                Y[53] = ((volume[y2,x2,z3]-volume[y0,x2,z3]-volume[y2,x2,z1]+volume[y0,x2,z1])/4.)
+                Y[54] = ((volume[y3,x1,z3]-volume[y1,x1,z3]-volume[y3,x1,z1]+volume[y1,x1,z1])/4.)
+                Y[55] = ((volume[y3,x2,z3]-volume[y1,x2,z3]-volume[y3,x2,z1]+volume[y1,x2,z1])/4.)
+
+                # values of d3f/dxdydz at each corner.
+                Y[56] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y0,x2,z2]+volume[y0,x0,z2]
+                          -volume[y2,x2,z0]-volume[y2,x0,z0]-volume[y0,x2,z0]+volume[y0,x0,z0])/8.)
+                Y[57] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y0,x3,z2]+volume[y0,x1,z2]
+                          -volume[y2,x3,z0]-volume[y2,x1,z0]-volume[y0,x3,z0]+volume[y0,x1,z0])/8.)
+                Y[58] = ((volume[y3,x2,z2]-volume[y3,x0,z2]-volume[y1,x2,z2]+volume[y1,x0,z2]
+                          -volume[y3,x2,z0]-volume[y3,x0,z0]-volume[y1,x2,z0]+volume[y1,x0,z0])/8.)
+                Y[59] = ((volume[y3,x3,z2]-volume[y3,x1,z2]-volume[y1,x3,z2]+volume[y1,x1,z2]
+                          -volume[y3,x3,z0]-volume[y3,x1,z0]-volume[y1,x3,z0]+volume[y1,x1,z0])/8.)
+
+                Y[60] = ((volume[y2,x2,z3]-volume[y2,x0,z3]-volume[y0,x2,z3]+volume[y0,x0,z3]
+                          -volume[y2,x2,z1]-volume[y2,x0,z1]-volume[y0,x2,z1]+volume[y0,x0,z1])/8.)
+                Y[61] = ((volume[y2,x3,z3]-volume[y2,x1,z3]-volume[y0,x3,z3]+volume[y0,x1,z3]
+                          -volume[y2,x3,z1]-volume[y2,x1,z1]-volume[y0,x3,z1]+volume[y0,x1,z1])/8.)
+                Y[62] = ((volume[y3,x2,z3]-volume[y3,x0,z3]-volume[y1,x2,z3]+volume[y1,x0,z3]
+                          -volume[y3,x2,z1]-volume[y3,x0,z1]-volume[y1,x2,z1]+volume[y1,x0,z1])/8.)
+                Y[63] = ((volume[y3,x3,z3]-volume[y3,x1,z3]-volume[y1,x3,z3]+volume[y1,x1,z3]
+                          -volume[y3,x3,z1]-volume[y3,x1,z1]-volume[y1,x3,z1]+volume[y1,x1,z1])/8.) 
+
+                tricubic_dict[(x1,y1,z1)] = Y
+    return tricubic_dict
 # Tricubic interpolation
+def tricubic_interp(shape, tricubic_cache, x, y, z):
+    # find the closes grid of the target points
+    x1 = np.floor(x).astype(int)
+    x1 = np.clip(x1, 0, shape[1]-1)
+    y1 = np.floor(y).astype(int)
+    y1 = np.clip(y1, 0, shape[0]-1)
+    z1 = np.floor(z).astype(int)
+    z1 = np.clip(z1, 0, shape[2]-1)
+    
+    # load in precomputed first and second derivatives for this volume
+    Y = tricubic_cache[(x1,y1,z1)]
+    
+    # Compute A
+    A = np.dot(X_inv,Y)
+    # get vector Y from points that need to be interpolated
+    target_Y = get_target_Y(x-x1, y-y1, z-z1)
+    # compute result
+    result = np.dot(target_Y, A)
+    return result[0]
+
+'''
 def tricubic_interp(volume, x, y, z):
 
     # find the closes grid of the target points
@@ -277,7 +423,7 @@ def tricubic_interp(volume, x, y, z):
     # compute result
     result = np.dot(target_Y, A)
     return result[0]
-
+'''
 # Tricubic interpolation
 def tricubic_interp_A(volume, x, y, z):
 
@@ -507,7 +653,7 @@ def rotate_coords_3d(x, y, z, theta, wx, wy, wz, ox,oy,oz):
     rotz = c*z+s*(wx*y-wy*x)+(1-c)*(wx*x+wy*y+wz*z)*wz + oz
     return (rotx,roty,rotz)
 
-def volrotate(volume_org, theta, wx, wy, wz, interpolation='trilinear'):
+def volrotate_trilinear(volume_org, theta, wx, wy, wz,xx,yy,zz):
     '''
     wx, wy, wz is the unit vector describing the axis of rotation
     theta is the rotation angle
@@ -523,22 +669,40 @@ def volrotate(volume_org, theta, wx, wy, wz, interpolation='trilinear'):
     elif(shape[0] == 32): res = '8mm'
     else: res = '6_4mm'
 
-    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    #xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     
     dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
-    if(interpolation == 'trilinear'):
-        dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
-    if(interpolation == 'tricubic'):
-        n = shape[0]
-        dest = np.empty([n,n,n])
-        for i in xrange(shape[0]):
-            for j in xrange(shape[1]):
-                for k in xrange(shape[2]):
-                    dest[i,j,k] = tricubic_interp(volume,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k])
+    dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
     return dest
 
+def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx,yy,zz):
+    '''
+    volume_shape: shape of the input volume
+    tricubic_cache: precomputed derivative values for each point
+    wx, wy, wz is the unit vector describing the axis of rotation
+    theta is the rotation angle
+    '''
+    # find center of the volume
+    ox = volume_shape[1]/2.-0.5
+    oy = volume_shape[0]/2.-0.5
+    oz = volume_shape[2]/2.-0.5
+    
+    if(volume_shape[0] == 26): res = '10'
+    elif(volume_shape[0] == 32): res = '8'
+    else: res = '6_4'
 
-def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz,interpolation = 'trilinear'):
+    #xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    
+    dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
+
+    dest = np.empty(volume_shape)
+    for i in xrange(volume_shape[0]):
+        for j in xrange(volume_shape[1]):
+            for k in xrange(volume_shape[2]):
+                dest[i,j,k] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k]) 
+    return dest
+
+def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz, xx,yy,zz,interpolation = 'trilinear'):
     '''
     vol1: original image
     vol2: volume to be rotated
@@ -546,7 +710,13 @@ def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz,interpolation = 'trilinear')
     arg: string for plot titles
     '''
     cost_func = np.zeros([len(thetas),])
-    for idx, t in enumerate(thetas):
-        new_vol2 = volrotate(vol2,t,wx,wy,wz,interpolation)
-        cost_func[idx] = cf_ssd(new_vol2,vol1)
+    if (interpolation == 'trilinear'):
+        for idx, t in enumerate(thetas):
+            new_vol2 = volrotate_trilinear(vol2,t,wx,wy,wz)
+            cost_func[idx] = cf_ssd(new_vol2,vol1)
+    if(interpolation == 'tricubic'):
+        tricubic_cache = get_tricubic_cache(vol2)
+        for idx, t in enumerate(thetas):
+            new_vol2 = volrotate_tricubic(vol2.shape, tricubic_cache, t, wx,wy,wz,xx,yy,zz)
+            cost_func[idx] = cf_ssd(new_vol2,vol1)
     return cost_func
