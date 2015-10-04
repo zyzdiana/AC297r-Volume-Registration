@@ -766,7 +766,7 @@ def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz, xx,yy,zz,interpolation = 't
     cost_func = np.zeros([len(thetas),])
     if (interpolation == 'trilinear'):
         for idx, t in enumerate(thetas):
-            new_vol2 = volrotate_trilinear(vol2,t,wx,wy,wz)
+            new_vol2 = volrotate_trilinear(vol2,t,wx,wy,wz,xx,yy,zz)
             cost_func[idx] = cf_ssd(new_vol2,vol1)
     if(interpolation == 'tricubic'):
         tricubic_cache = get_tricubic_cache(vol2)
