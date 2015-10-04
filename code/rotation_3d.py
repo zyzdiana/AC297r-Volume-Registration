@@ -622,21 +622,22 @@ def rotation_matrix_zyx(gamma, beta, alpha):
     rx = np.array([[1,0,0],[0,np.cos(gamma),-np.sin(gamma)],[0,np.sin(gamma),np.cos(gamma)]])
     return (rz.dot(ry)).dot(rx)
 
-'''
+
 # Rotate the coordinates using rotation matrix
-def rotate_coords_3d(x, y, z, gamma, beta, alpha, ox, oy, oz):
+def rotate_coords_3d_matrix(x, y, z, gamma, beta, alpha, ox, oy, oz):
+    '''
     Rotate arrays of coordinates x, y and z about the point (ox, oy, oz)
     about x axis by gamma degrees
     about y axis by beta degrees
     about z axis by alpha degrees
-
+    '''
     R = rotation_matrix_zyx(gamma, beta, alpha)
     #tmp = np.vstack([a,np.zeros([1,3])])
     x, y, z = x - ox, y - oy, z - oz
     return ((R[0][0]*x + R[0][1]*y + R[0][2]*z) + ox, 
             (R[1][0]*x + R[1][1]*y + R[1][2]*z) + oy, 
             (R[2][0]*x + R[2][1]*y + R[2][2]*z) + oz)
-'''
+
 # Rotate the coordinates using axis-angle rotation
 def rotate_coords_3d(x, y, z, theta, wx, wy, wz, ox,oy,oz):
     theta = to_radian(theta)
@@ -652,6 +653,59 @@ def rotate_coords_3d(x, y, z, theta, wx, wy, wz, ox,oy,oz):
     roty = c*y+s*(wz*x-wx*z)+(1-c)*(wx*x+wy*y+wz*z)*wy + oy
     rotz = c*z+s*(wx*y-wy*x)+(1-c)*(wx*x+wy*y+wz*z)*wz + oz
     return (rotx,roty,rotz)
+
+def rotation_matrix_fromq(theta, ui, uj, uk):
+    c = np.cos(theta)
+    s = np.sin(theta)
+    rotMatrix = np.zeros([3,3])
+    
+    rotMatrix[0][0] = c + ui**2*(1-c)
+    rotMatrix[0][1] = ui*uj*(1-c) - uk*s
+    rotMatrix[0][2] = ui*uk*(1-c) + uj*s
+
+    rotMatrix[1][0] = uj*ui*(1-c) + uk*s
+    rotMatrix[1][1] = c + uj**2*(1-c)
+    rotMatrix[1][2] = uj*uk*(1-c) - ui*s
+
+    rotMatrix[2][0] = uk*ui*(1-c) - uj*s
+    rotMatrix[2][1] = uk*uj*(1-c) + ui*s
+    rotMatrix[2][2] = c + uk**2*(1-c)
+    
+    return rotMatrix
+def rotate_coords_3d_matrix_fromq(x, y, z, theta, wx, wy, wz, ox,oy,oz):
+    '''
+    Rotate arrays of coordinates x, y and z about the point (ox, oy, oz)
+    about x axis by gamma degrees
+    about y axis by beta degrees
+    about z axis by alpha degrees
+    '''
+    R = rotation_matrix_fromq(theta, wx, wy, wz)
+    #tmp = np.vstack([a,np.zeros([1,3])])
+    x, y, z = x - ox, y - oy, z - oz
+    return ((R[0][0]*x + R[0][1]*y + R[0][2]*z) + ox, 
+            (R[1][0]*x + R[1][1]*y + R[1][2]*z) + oy, 
+            (R[2][0]*x + R[2][1]*y + R[2][2]*z) + oz)
+def volrotate_trilinear_matrix(volume_org, gamma, beta, alpha,xx,yy,zz):
+    '''
+    wx, wy, wz is the unit vector describing the axis of rotation
+    theta is the rotation angle
+    '''
+    volume = volume_org.copy()
+    shape = volume.shape
+    # find center of the volume
+    ox = shape[1]/2.-0.5
+    oy = shape[0]/2.-0.5
+    oz = shape[2]/2.-0.5
+    
+    if(shape[0] == 26): res = '10mm'
+    elif(shape[0] == 32): res = '8mm'
+    else: res = '6_4mm'
+
+    #xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    
+    dest_x, dest_y, dest_z = rotate_coords_3d_matrix(xx, yy, zz, gamma, beta, alpha, ox, oy, oz)
+    dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
+    return dest
 
 def volrotate_trilinear(volume_org, theta, wx, wy, wz,xx,yy,zz):
     '''
