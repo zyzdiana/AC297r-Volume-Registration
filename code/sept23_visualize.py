@@ -166,6 +166,7 @@ def scatter_plot_cubic(cost_dict, res, axes, step_size = 0.1):
     for idx, rot_ax in enumerate(axes):
         count = 1
         for rot_range in ranges:
+            #print rot_range
             for loop in xrange(6):
                 for i in xrange(1,6):
                     rep = i + loop * 6
@@ -224,9 +225,9 @@ def scatter_plot_trans(cost_dict, res, axes):
                     cost = cost_dict[rot_ax][rot_angle]
                     y = abs(trans[np.argmin(cost,axis=0)])*float(res[:-2])
                     plt.scatter(step, y, s = 80, c = colors[ax_to_idx[rot_ax]],alpha = 0.3,marker='o',lw=0,label = label)
-    plt.plot([-1,6],[0,6],c='black')
-    plt.xlim([-1,6])
-    plt.ylim([-1,6])
+    plt.plot([0,6],[0,6],c='black')
+    plt.xlim([0,6])
+    plt.ylim([0,6])
     plt.legend(loc='best')
     plt.xlabel('True Translations (mm)')
     plt.ylabel('Search Results from Registration')

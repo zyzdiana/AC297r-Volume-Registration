@@ -48,13 +48,13 @@ def res_to_rad(res):
     '''
     converts resolution to its corresponding voxel
     '''
-    if(res == '5mm'):
+    if('5' in res):
         return 52/2
-    if(res == '6_4mm'):
+    if('6_4' in res):
         return 40/2
-    if(res == '8mm'):
+    if('8' in res):
         return 32/2
-    if(res == '10mm'):
+    if('10' in res):
         return 26/2
 
 # function to help convert rotation axis to the unit vector of rotation
