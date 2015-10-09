@@ -377,7 +377,7 @@ def rotate_coords_3d_matrix(x, y, z, gamma, beta, alpha, ox, oy, oz):
 def rotate_coords_3d(x, y, z, theta, wx, wy, wz, ox,oy,oz):
     theta = to_radian(theta)
     # make sure w is a unit vetor:
-    if (wx**2 + wy**2 + wz**2 != 1):
+    if ((wx**2 + wy**2 + wz**2 != 1) and (wx**2 + wy**2 + wz**2 != 0)):
         norm = np.sqrt(wx**2 + wy**2 + wz**2)
         wx = wx/norm
         wy = wy/norm

@@ -158,6 +158,31 @@ def error_in_time(cost_dict, res, step_size, axes, ax_to_idx_dict=ax_to_idx):
             plt.ylabel('Absolute error')
     plt.show()
 
+def error_plot(cost_dict, col, res, step_size, axes, ax_to_idx_dict=ax_to_idx,theta_range = 1):
+    colors = ['red','blue','green','orange','brown','purple']
+    ranges = ['0_5_to_2_5','3_0_to_5_0']
+    errors = []
+    for idx, rot_ax in enumerate(axes):
+        #plt.figure(figsize = [15,4])
+        for ii, rot_range in enumerate(ranges):
+            #plt.subplot(1,2,ii+1)
+            for loop in xrange(6):
+                for i in xrange(1,6):
+                    rep = i + loop * 6
+                    rot_angle = rep_to_angle(rep,rot_range)
+                    deg = rot_angle[0]
+                    thetas = np.arange(deg-theta_range,deg+theta_range,step_size)
+                    cost = cost_dict[ax_to_idx_dict[rot_ax]][rot_angle]
+                    y = abs(thetas[np.argmin(cost,axis=0)])
+                    plt.scatter(col,deg-y, lw=0,s = 30, c = colors[ax_to_idx[rot_ax]],alpha = 0.1,marker='o')
+            #plt.hlines([0.05,-0.05],-5,40,'black')
+            plt.xlim([0,7])
+            plt.ylim([-0.5,3.5])
+            #plt.title('%s, %s, rot_%s, trans_%s' % (res,rot_range,rot_ax,axes_dict[rot_ax]))
+            plt.title('Error Plot for Rotations')
+            #plt.xlabel('Data Set')
+            plt.ylabel('Errors')
+    #plt.show()
 #########################################################
 # Plot Tricubic Results
 #########################################################
@@ -298,3 +323,28 @@ def error_in_time_trans(cost_dict, res):
             plt.xlabel('Repetitions')
         plt.ylabel('abs(search results - true translation)')
         plt.show()
+
+def error_plot_trans(cost_dict, col, res):
+    colors = ['red','blue','green','orange','brown','purple']
+    ranges = ['0_5_to_2_5','3_0_to_5_0']
+    trans = np.arange(-1,1,0.01)
+    for idx, rot_ax in enumerate(axes_dict.keys()):
+        #plt.figure(figsize = [15,4])
+        for ii, rot_range in enumerate(ranges):
+            #plt.subplot(1,2,ii+1)
+            for loop in xrange(1,6):
+                for i in xrange(6):
+                    rep = i + loop * 6
+                    rot_angle = rep_to_angle(rep,rot_range)
+                    step = rot_angle[1]
+                    cost = cost_dict[rot_ax][rot_angle]
+                    y = abs(trans[np.argmin(cost,axis=0)])*float(res[:-2])
+                    plt.scatter(col,y-step, lw=0,s = 50, c = colors[ax_to_idx[rot_ax]],alpha = 0.1,marker='o')
+            #plt.hlines([0.05,-0.05],-5,40,'black')
+            plt.xlim([0,7])
+            plt.ylim([-2.0,1.0])
+            #plt.title('%s, %s, rot_%s, trans_%s' % (res,rot_range,rot_ax,axes_dict[rot_ax]))
+            plt.title('Error Plot for Translations')
+            #plt.xlabel('Data Set')
+            plt.ylabel('Errors')
+    #plt.show()
