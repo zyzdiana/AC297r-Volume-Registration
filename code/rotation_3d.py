@@ -146,7 +146,7 @@ def get_target_Y(x, y, z):
 def tricubic_derivatives(volume):
     shape = volume.shape
     dest = np.empty(shape)
-    tricubic_dict = {}
+    tricubic_derivative_dict = {}
     for i in xrange(-15,shape[0]+15):
         for j in xrange(-15,shape[0]+15):
             for k in xrange(-15,shape[0]+15):
@@ -175,6 +175,7 @@ def tricubic_derivatives(volume):
                 z0 = np.clip(z0, 0, volume.shape[2]-1)
                 z1 = np.clip(z1, 0, volume.shape[2]-1)
                 z2 = np.clip(z2, 0, volume.shape[2]-1)
+                z3 = np.clip(z3, 0, volume.shape[2]-1)
 
                 # Compute vector Y from known points
                 Y = np.zeros([64,])
