@@ -344,10 +344,11 @@ def scatter_plot_trans(cost_dict, res, axes):
     plt.ylabel('Search Results from Registration')
     plt.title('Search Results for %s Resolution' %res)
 
-def scatter_plot_trans1(cost_dict, res):
+def scatter_plot_trans1(cost_dict, res, step_range=2):
     ranges = ['0_5_to_2_5','3_0_to_5_0']
     count = 0
-    trans = np.arange(-1,1,0.01)
+    #trans = np.arange(-1,1,0.01)
+    rot_ax = 'yz'
     for rot_range in ranges:
         count = 1
         for loop in xrange(1,6):
@@ -360,7 +361,7 @@ def scatter_plot_trans1(cost_dict, res):
                 rot_angle = rep_to_angle(rep,rot_range)
                 cost = cost_dict[rot_angle]
                 step = float(rot_angle[1])*5./float('.'.join(res[:-2].split('_')))
-                trans = np.arange(-np.floor(step)-2,-np.floor(step)+2,0.01)
+                trans = np.arange(-np.floor(step)-step_range,-np.floor(step)+step_range,0.01)
                 y = abs(trans[np.argmin(cost,axis=0)])*float('.'.join(res[:-2].split('_')))
                 plt.scatter(float(rot_angle[1])*5., y, s = 60, c = 'green',alpha = 0.3,marker='o',lw=0,label = label)
     plt.plot([0,30],[0,30],c='black')
@@ -370,7 +371,29 @@ def scatter_plot_trans1(cost_dict, res):
     plt.xlabel('True Translations (mm)')
     plt.ylabel('Search Results from Registration')
     plt.title('Search Results for %s Resolution' %res)
-    
+
+def error_plot_trans1(cost_dict, col, res,step_range=2):
+    colors = ['red','blue','green','orange','brown','purple']
+    ranges = ['0_5_to_2_5','3_0_to_5_0']
+    rot_ax = 'yz'
+    for ii, rot_range in enumerate(ranges):
+        #plt.subplot(1,2,ii+1)
+        for loop in xrange(1,6):
+            for i in xrange(6):
+                rep = i + loop * 6
+                rot_angle = rep_to_angle(rep,rot_range)
+                cost = cost_dict[rot_angle]
+                step = float(rot_angle[1])*5./float('.'.join(res[:-2].split('_')))
+                trans = np.arange(-np.floor(step)-step_range,-np.floor(step)+step_range,0.01)
+                y = abs(trans[np.argmin(cost,axis=0)])#*float('.'.join(res[:-2].split('_')))
+                plt.scatter(col,y-step, lw=0,s = 30, c = colors[ax_to_idx[rot_ax]],alpha = 0.1,marker='o')
+            #plt.hlines([0.05,-0.05],-5,40,'black')
+            plt.xlim([0,7])
+            plt.ylim([-1.0,3.0])
+            #plt.title('%s, %s, rot_%s, trans_%s' % (res,rot_range,rot_ax,axes_dict[rot_ax]))
+            plt.title('Error Plot for Translations',fontsize = 18)
+            #plt.xlabel('Data Set')
+            plt.ylabel('Errors (mm)',fontsize = 15)    
 def scatter_plot_all_trans(axes, cost_dict_10, cost_dict_8, cost_dict_6_4,figsize = [12,4], interp = 'Linear'):
     plt.figure(figsize = figsize)
     plt.subplot(1,3,1)
