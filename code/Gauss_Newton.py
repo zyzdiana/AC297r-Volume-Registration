@@ -69,8 +69,8 @@ def axis_derivatives(volume):
                 tricubic_derivative_dict[(i,j,k)] = Y
     return tricubic_derivative_dict
 
-def rotate_coords_transformation_m(x, y, z, params, ox,oy,oz):
-    l = np.sqrt(params[3]**2+params[4]**2+params[5]**2)/16.
+def rotate_coords_transformation_m(x, y, z, params, ox,oy,oz, k=16.):
+    l = np.sqrt(params[3]**2+params[4]**2+params[5]**2)/k
     if(l == 0):
         return (x,y,z)
     s,c = np.sin(l/2.),np.cos(l/2.)
@@ -86,8 +86,11 @@ def rotate_coords_transformation_m(x, y, z, params, ox,oy,oz):
 
     return (rotx,roty,rotz)
 
-def get_M(x1,x2,x3):
-    M = np.array([[1,0,0,0,x3/16.,-x2/16.],[0,1,0,-x3/16.,0,x1/16.],[0,0,1,x2/16.,-x1/16.,0]])
+def get_M(x1_org,x2_org,x3_org,k=16.):
+    x1 = x1_org/k
+    x2 = x2_org/k
+    x3 = x3_org/k
+    M = np.array([[1,0,0,0,x3,-x2],[0,1,0,-x3,0,x1],[0,0,1,x2,-x1,0]])
     return M
 
 def to_degree(radian):
@@ -129,7 +132,9 @@ def print_results(errors, Ps, res):
     print 'translation (in mm):', params[:3]*res
     print 'rotations (in degrees):', params[3:]*180/np.pi
 
-def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, alpha = 0.2, decrease_factor = 0.25, P_initial = np.array([0,0,0,0,0,0]), plot = True):
+def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, 
+                 divide_factor = 16., alpha = 0.2, decrease_factor = 0.25, 
+                 P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 20):
 
     volume_shape = Vol1.shape
     if (volume_shape[0] == 26): res = '10'
@@ -146,14 +151,14 @@ def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, alpha = 0.2, de
     errors = []
     errors.append(1.0)
     
-    volume_shape = Vol1.shape
-    for counter in xrange(20):
+    for counter in xrange(max_iter):
         print counter,
         #print P_s
         P_old = P_new.copy()
         
         # Get the new coordinates by rotating the volume by the opposite amount of P_s
-        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, -1.*P_old, ox, oy, oz)
+        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, -1.*P_old, ox, oy, oz,divide_factor)
+        #print dest_x
         # Initilization
         Jr = np.empty([volume_shape[0]*volume_shape[1]*volume_shape[2],6])
         Jr_rP = np.zeros([6,])
@@ -163,7 +168,7 @@ def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, alpha = 0.2, de
             for j in xrange(volume_shape[1]):
                 for k in xrange(volume_shape[2]):
                     dest[i,j,k] = tricubic_interp(volume_shape,Vol2_derivatives,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k]) 
-                    M = get_M(yy[i,j,k]-ox,xx[i,j,k]-oy,zz[i,j,k]-oz)
+                    M = get_M(yy[i,j,k]-ox,xx[i,j,k]-oy,zz[i,j,k]-oz,divide_factor)
                     for ii in xrange(len(P_old)):
                         Jr[idx,ii] = -1.*Vol1_derivatives[j,i,k].dot(M[:,ii])
                         Jr_rP[ii] += Jr[idx,ii]*(Vol1[yy[i,j,k],xx[i,j,k],zz[i,j,k]]-dest[i,j,k])

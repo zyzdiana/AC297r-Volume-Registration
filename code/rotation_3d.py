@@ -163,19 +163,22 @@ def tricubic_derivatives(volume):
                 z0 = z1 - 1
                 z2 = z1 + 1
                 z3 = z2 + 1
-                # Clip Range
-                x0 = np.clip(x0, 0, volume.shape[1]-1)
-                x1 = np.clip(x1, 0, volume.shape[1]-1)
-                x2 = np.clip(x2, 0, volume.shape[1]-1)
-                x3 = np.clip(x3, 0, volume.shape[1]-1)
-                y0 = np.clip(y0, 0, volume.shape[0]-1)
-                y1 = np.clip(y1, 0, volume.shape[0]-1)
-                y2 = np.clip(y2, 0, volume.shape[0]-1)
-                y3 = np.clip(y3, 0, volume.shape[0]-1)
-                z0 = np.clip(z0, 0, volume.shape[2]-1)
-                z1 = np.clip(z1, 0, volume.shape[2]-1)
-                z2 = np.clip(z2, 0, volume.shape[2]-1)
-                z3 = np.clip(z3, 0, volume.shape[2]-1)
+
+                # Wrap Around
+                x0 = (x0 + volume.shape[1]) % volume.shape[1]
+                x1 = (x1 + volume.shape[1]) % volume.shape[1]
+                x2 = (x2 + volume.shape[1]) % volume.shape[1]
+                x3 = (x3 + volume.shape[1]) % volume.shape[1]
+
+                y0 = (y0 + volume.shape[0]) % volume.shape[0]
+                y1 = (y1 + volume.shape[0]) % volume.shape[0]
+                y2 = (y2 + volume.shape[0]) % volume.shape[0]
+                y3 = (y3 + volume.shape[0]) % volume.shape[0]
+
+                z0 = (z0 + volume.shape[2]) % volume.shape[2]
+                z1 = (z1 + volume.shape[2]) % volume.shape[2] 
+                z2 = (z2 + volume.shape[2]) % volume.shape[2]
+                z3 = (z3 + volume.shape[2]) % volume.shape[2] 
 
                 # Compute vector Y from known points
                 Y = np.zeros([64,])
@@ -270,7 +273,21 @@ def tricubic_derivatives(volume):
 
                 tricubic_derivative_dict[(i,j,k)] = Y
     return tricubic_derivative_dict
-
+'''
+                # Clip Range
+                x0 = np.clip(x0, 0, volume.shape[1]-1)
+                x1 = np.clip(x1, 0, volume.shape[1]-1)
+                x2 = np.clip(x2, 0, volume.shape[1]-1)
+                x3 = np.clip(x3, 0, volume.shape[1]-1)
+                y0 = np.clip(y0, 0, volume.shape[0]-1)
+                y1 = np.clip(y1, 0, volume.shape[0]-1)
+                y2 = np.clip(y2, 0, volume.shape[0]-1)
+                y3 = np.clip(y3, 0, volume.shape[0]-1)
+                z0 = np.clip(z0, 0, volume.shape[2]-1)
+                z1 = np.clip(z1, 0, volume.shape[2]-1)
+                z2 = np.clip(z2, 0, volume.shape[2]-1)
+                z3 = np.clip(z3, 0, volume.shape[2]-1)
+'''
 # Tricubic interpolation
 def tricubic_interp(shape, derivatives, x, y, z):
     '''

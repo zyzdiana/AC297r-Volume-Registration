@@ -174,15 +174,17 @@ def error_plot(cost_dict, col, res, step_size, axes, ax_to_idx_dict=ax_to_idx,th
                     thetas = np.arange(deg-theta_range,deg+theta_range,step_size)
                     cost = cost_dict[ax_to_idx_dict[rot_ax]][rot_angle]
                     y = abs(thetas[np.argmin(cost,axis=0)])
+                    errors.append(deg-y)
                     plt.scatter(col,deg-y, lw=0,s = 30, c = colors[ax_to_idx[rot_ax]],alpha = 0.1,marker='o')
             #plt.hlines([0.05,-0.05],-5,40,'black')
             plt.xlim(xlim)
             plt.ylim([-0.5,2.0])
             #plt.title('%s, %s, rot_%s, trans_%s' % (res,rot_range,rot_ax,axes_dict[rot_ax]))
-            plt.title('Error Plot for Rotations',fontsize = 18)
+            plt.title('Error Plot for Rotations',fontsize = 20)
             #plt.xlabel('Data Set')
             plt.ylabel('Errors (degrees)',fontsize=15)
     #plt.show()
+    return errors
 #########################################################
 # Plot Tricubic Results
 #########################################################
@@ -195,10 +197,25 @@ def preprocess(cost_dict1,cost_dict2):
         dict_.update(cost_dict2[i])
         cost_dict.append(dict_)
     return cost_dict
-def load_pickle(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/'):
-    filename1 = path + 'oct13_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+
+def load_pickle(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/',filtered=False):
+    if filtered:
+        filename1 = path + 'oct13_filtered_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+        cost_dict_1 = pickle.load(open(filename1,'rb'))
+        filename2 = path + 'oct13_filtered_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+        cost_dict_2 = pickle.load(open(filename2,'rb'))
+        return preprocess(cost_dict_1,cost_dict_2)
+    else:       
+        filename1 = path + 'oct13_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+        cost_dict_1 = pickle.load(open(filename1,'rb'))
+        filename2 = path + 'oct13_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+        cost_dict_2 = pickle.load(open(filename2,'rb'))
+        return preprocess(cost_dict_1,cost_dict_2)
+
+def load_pickle_filtered(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/'):
+    filename1 = path + 'oct13_filtered_tricubic_%s_%s_rotation_0.p' % (res, rotation)
     cost_dict_1 = pickle.load(open(filename1,'rb'))
-    filename2 = path + 'oct13_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+    filename2 = path + 'oct13_filtered_tricubic_%s_%s_rotation_1.p' % (res, rotation)
     cost_dict_2 = pickle.load(open(filename2,'rb'))
     return preprocess(cost_dict_1,cost_dict_2)
 
