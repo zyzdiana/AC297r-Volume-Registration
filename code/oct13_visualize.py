@@ -202,7 +202,11 @@ def error_plot(cost_dict, col, res, step_size, axes, ax_to_idx_dict=ax_to_idx,th
             plt.xlim(xlim)
             plt.ylim([-0.5,2.0])
             #plt.title('%s, %s, rot_%s, trans_%s' % (res,rot_range,rot_ax,axes_dict[rot_ax]))
+<<<<<<< HEAD
             plt.title('Rotations',fontsize = 20)
+=======
+            plt.title('Error Plot for Rotations',fontsize = 20)
+>>>>>>> 8e09c006c31cc8b033bb57685a3ea72162f85b7e
             #plt.xlabel('Data Set')
             plt.ylabel('Errors (degrees)',fontsize=15)
     #plt.show()
@@ -220,6 +224,7 @@ def preprocess(cost_dict1,cost_dict2):
         cost_dict.append(dict_)
     return cost_dict
 
+<<<<<<< HEAD
 def load_pickle(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/',filtered=False, offax = False,filtered8=False):
     if offax:
         filename1 = path + 'oct13_offax1_tricubic_%s_%s_rotation_0.p' % (res, rotation)
@@ -233,17 +238,24 @@ def load_pickle(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Resu
         cost_dict_4 = pickle.load(open(filename4,'rb'))
         return preprocess(cost_dict_1,cost_dict_2),preprocess(cost_dict_3,cost_dict_4)
     elif filtered:
+=======
+def load_pickle(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/',filtered=False):
+    if filtered:
+>>>>>>> 8e09c006c31cc8b033bb57685a3ea72162f85b7e
         filename1 = path + 'oct13_filtered_tricubic_%s_%s_rotation_0.p' % (res, rotation)
         cost_dict_1 = pickle.load(open(filename1,'rb'))
         filename2 = path + 'oct13_filtered_tricubic_%s_%s_rotation_1.p' % (res, rotation)
         cost_dict_2 = pickle.load(open(filename2,'rb'))
         return preprocess(cost_dict_1,cost_dict_2)
+<<<<<<< HEAD
     elif filtered8:
         filename1 = path + 'oct13_filtered_0_8_tricubic_%s_%s_rotation_0.p' % (res, rotation)
         cost_dict_1 = pickle.load(open(filename1,'rb'))
         filename2 = path + 'oct13_filtered_0_8_tricubic_%s_%s_rotation_1.p' % (res, rotation)
         cost_dict_2 = pickle.load(open(filename2,'rb'))
         return preprocess(cost_dict_1,cost_dict_2)
+=======
+>>>>>>> 8e09c006c31cc8b033bb57685a3ea72162f85b7e
     else:       
         filename1 = path + 'oct13_tricubic_%s_%s_rotation_0.p' % (res, rotation)
         cost_dict_1 = pickle.load(open(filename1,'rb'))

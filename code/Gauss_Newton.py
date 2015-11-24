@@ -84,6 +84,10 @@ def rotate_coords_transformation_m(x, y, z, params, ox,oy,oz, k=16.):
     rotz = (alpha**2-beta**2-gamma**2+delta**2)*z+2*(gamma*delta+alpha*beta)*y+2*(beta*delta-alpha*gamma)*x+oz+params[2]
 
     return (rotx,roty,rotz)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8e09c006c31cc8b033bb57685a3ea72162f85b7e
 def get_M(x1_org,x2_org,x3_org,k=16.):
     x1 = x1_org/k
     x2 = x2_org/k
