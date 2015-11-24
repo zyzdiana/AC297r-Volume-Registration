@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+#import seaborn as sns
+#sns.set_style("whitegrid")
+#sns.set_context("poster")
 import cPickle as pickle
 import scipy.special
 import ghalton
@@ -18,6 +21,25 @@ rot_axes = ['xz', 'y', 'yz', 'xy', 'x', 'z']
 ax_to_idx = {}
 for rot_ax in rot_axes:
     ax_to_idx[rot_ax] = rot_axes.index(rot_ax)
+
+def plot_results_offax(cost_dict1,cost_dict2, res, axes, interpolation = 'Cubic',step_size = 0.1):
+    ranges = ['0_5_to_2_5','3_0_to_5_0']
+    for idx, rot_ax in enumerate(axes):
+        for rot_range in ranges:
+            for loop in xrange(6):
+                plt.figure(figsize = [40,4])
+                for i in xrange(1,6):
+                    rep = i + loop * 6
+                    rot_angle = rep_to_angle(rep,rot_range)
+                    deg = rot_angle[0]
+                    thetas = np.arange(-3,3,step_size)
+                    rot = '%s_%s' % (str(rot_angle[0]),rot_ax)
+                    plt.subplot(1,6,i+1)
+                    plot_cost_func(thetas,cost_dict1[idx][rot_angle],res,interpolation,rot,alpha = 0.5,lw=2)
+                    plot_cost_func(thetas,cost_dict2[idx][rot_angle],res,interpolation,rot,alpha = 0.5,lw=2)
+                    plt.xlabel('Angles (degrees)')
+                    plt.ylabel('SSD Cost Function')
+                plt.show() 
 
 def plot_results(cost_dict, res, interpolation,step_size = 0.1):
     ranges = ['0_5_to_2_5','3_0_to_5_0']
@@ -174,15 +196,17 @@ def error_plot(cost_dict, col, res, step_size, axes, ax_to_idx_dict=ax_to_idx,th
                     thetas = np.arange(deg-theta_range,deg+theta_range,step_size)
                     cost = cost_dict[ax_to_idx_dict[rot_ax]][rot_angle]
                     y = abs(thetas[np.argmin(cost,axis=0)])
+                    errors.append(deg-y)
                     plt.scatter(col,deg-y, lw=0,s = 30, c = colors[ax_to_idx[rot_ax]],alpha = 0.1,marker='o')
             #plt.hlines([0.05,-0.05],-5,40,'black')
             plt.xlim(xlim)
             plt.ylim([-0.5,2.0])
             #plt.title('%s, %s, rot_%s, trans_%s' % (res,rot_range,rot_ax,axes_dict[rot_ax]))
-            plt.title('Error Plot for Rotations',fontsize = 18)
+            plt.title('Rotations',fontsize = 20)
             #plt.xlabel('Data Set')
             plt.ylabel('Errors (degrees)',fontsize=15)
     #plt.show()
+    return errors
 #########################################################
 # Plot Tricubic Results
 #########################################################
@@ -195,10 +219,42 @@ def preprocess(cost_dict1,cost_dict2):
         dict_.update(cost_dict2[i])
         cost_dict.append(dict_)
     return cost_dict
-def load_pickle(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/'):
-    filename1 = path + 'oct13_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+
+def load_pickle(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/',filtered=False, offax = False,filtered8=False):
+    if offax:
+        filename1 = path + 'oct13_offax1_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+        cost_dict_1 = pickle.load(open(filename1,'rb'))
+        filename2 = path + 'oct13_offax1_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+        cost_dict_2 = pickle.load(open(filename2,'rb'))
+
+        filename3 = path + 'oct13_offax2_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+        cost_dict_3 = pickle.load(open(filename3,'rb'))
+        filename4 = path + 'oct13_offax2_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+        cost_dict_4 = pickle.load(open(filename4,'rb'))
+        return preprocess(cost_dict_1,cost_dict_2),preprocess(cost_dict_3,cost_dict_4)
+    elif filtered:
+        filename1 = path + 'oct13_filtered_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+        cost_dict_1 = pickle.load(open(filename1,'rb'))
+        filename2 = path + 'oct13_filtered_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+        cost_dict_2 = pickle.load(open(filename2,'rb'))
+        return preprocess(cost_dict_1,cost_dict_2)
+    elif filtered8:
+        filename1 = path + 'oct13_filtered_0_8_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+        cost_dict_1 = pickle.load(open(filename1,'rb'))
+        filename2 = path + 'oct13_filtered_0_8_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+        cost_dict_2 = pickle.load(open(filename2,'rb'))
+        return preprocess(cost_dict_1,cost_dict_2)
+    else:       
+        filename1 = path + 'oct13_tricubic_%s_%s_rotation_0.p' % (res, rotation)
+        cost_dict_1 = pickle.load(open(filename1,'rb'))
+        filename2 = path + 'oct13_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+        cost_dict_2 = pickle.load(open(filename2,'rb'))
+        return preprocess(cost_dict_1,cost_dict_2)
+
+def load_pickle_filtered(res,rotation,path = '/Users/zyzdiana/Dropbox/THESIS/Pickled_Results/'):
+    filename1 = path + 'oct13_filtered_tricubic_%s_%s_rotation_0.p' % (res, rotation)
     cost_dict_1 = pickle.load(open(filename1,'rb'))
-    filename2 = path + 'oct13_tricubic_%s_%s_rotation_1.p' % (res, rotation)
+    filename2 = path + 'oct13_filtered_tricubic_%s_%s_rotation_1.p' % (res, rotation)
     cost_dict_2 = pickle.load(open(filename2,'rb'))
     return preprocess(cost_dict_1,cost_dict_2)
 
@@ -420,17 +476,18 @@ def error_in_time_trans(cost_dict, res):
                     step = rot_angle[1]
                     cost = cost_dict[rot_ax][rot_angle]
                     y = abs(trans[np.argmin(cost,axis=0)])*float(res[:-2])
-                    plt.scatter(rep, abs(y-step), lw=0,s = 50, c = colors[ax_to_idx[rot_ax]],alpha = 0.6,marker='o')
+                    plt.scatter(rep, abs(step-y), lw=0,s = 50, c = colors[ax_to_idx[rot_ax]],alpha = 0.6,marker='o')
             plt.title('%s, %s, rot_%s, trans_%s' % (res,rot_range,rot_ax,axes_dict[rot_ax]))
             plt.xlabel('Repetitions')
         plt.ylabel('abs(search results - true translation)')
         plt.show()
 
-def error_plot_trans(cost_dict, col, res):
+def error_plot_trans(cost_dict, col, res, axes = axes_dict.keys()):
     colors = ['red','blue','green','orange','brown','purple']
     ranges = ['0_5_to_2_5','3_0_to_5_0']
     trans = np.arange(-1,1,0.01)
-    for idx, rot_ax in enumerate(axes_dict.keys()):
+    errors = []
+    for idx, rot_ax in enumerate(axes):
         #plt.figure(figsize = [15,4])
         for ii, rot_range in enumerate(ranges):
             #plt.subplot(1,2,ii+1)
@@ -441,7 +498,8 @@ def error_plot_trans(cost_dict, col, res):
                     step = rot_angle[1]
                     cost = cost_dict[rot_ax][rot_angle]
                     y = abs(trans[np.argmin(cost,axis=0)])*float(res[:-2])
-                    plt.scatter(col,y-step, lw=0,s = 30, c = colors[ax_to_idx[rot_ax]],alpha = 0.1,marker='o')
+                    errors.append(step-y)
+                    plt.scatter(col,step-y, lw=0,s = 30, c = colors[ax_to_idx[rot_ax]],alpha = 0.1,marker='o')
             #plt.hlines([0.05,-0.05],-5,40,'black')
             plt.xlim([0,7])
             plt.ylim([-1.0,1.0])
@@ -450,3 +508,4 @@ def error_plot_trans(cost_dict, col, res):
             #plt.xlabel('Data Set')
             plt.ylabel('Errors (mm)',fontsize = 15)
     #plt.show()
+    return errors

@@ -44,10 +44,10 @@ def plot_cost_func_all(thetas,cost_func,res,interp):
     plt.show()
     plt.close(fig)
     
-def plot_cost_func(thetas,cost_func,res,interp,rot, coil='body'):
+def plot_cost_func(thetas,cost_func,res,interp,rot, coil='body',alpha = 1, lw = 4):
     # plot the cost function and find the minimum angle
     angMin = thetas[np.argmin(cost_func,axis=0)]
-    plt.plot(thetas,cost_func,label='Min angle = %s\n Resolution = %s \n rotation = %s' % (angMin, res, rot))
+    plt.plot(thetas,cost_func,alpha = alpha, lw = lw,label='Min angle = %s\n Resolution = %s \n rotation = %s' % (angMin, res, rot))
     plt.title('SSD with %s interpolation, %s coil' % (interp,coil), fontsize=14)
     plt.xlabel('Angle (degrees)')
     plt.ylabel('Cost function')

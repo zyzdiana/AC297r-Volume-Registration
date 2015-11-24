@@ -69,25 +69,26 @@ def axis_derivatives(volume):
                 tricubic_derivative_dict[(i,j,k)] = Y
     return tricubic_derivative_dict
 
-def rotate_coords_transformation_m(x, y, z, params, ox,oy,oz):
-    l = np.sqrt(params[3]**2+params[4]**2+params[5]**2)/16.
+def rotate_coords_transformation_m(x, y, z, params, ox,oy,oz, k=16.):
+    l = np.sqrt(params[3]**2+params[4]**2+params[5]**2)/k
     if(l == 0):
-        return (x,y,z)
+        return (x+params[1],y+params[0],z+params[2])
     s,c = np.sin(l/2.),np.cos(l/2.)
     alpha = c
     beta = s*params[4]/l
     gamma = s*params[3]/l
     delta = s*params[5]/l
-
     x, y, z = x - ox, y - oy, z - oz
-    rotx = (alpha**2+beta**2-gamma**2-delta**2)*x+2*(beta*gamma-alpha*delta)*y+2*(beta*delta+alpha*gamma)*z+ox+params[0]
+    rotx = (alpha**2+beta**2-gamma**2-delta**2)*x+2*(beta*gamma-alpha*delta)*y+2*(beta*delta+alpha*gamma)*z+ox+params[1]
     roty = (alpha**2-beta**2+gamma**2-delta**2)*y+2*(beta*gamma+alpha*delta)*x+2*(gamma*delta-alpha*beta)*z+oy+params[0]
-    rotz = (alpha**2-beta**2-gamma**2+delta**2)*z+2*(gamma*delta+alpha*beta)*y+2*(beta*delta-alpha*gamma)*x+oz+params[0]
+    rotz = (alpha**2-beta**2-gamma**2+delta**2)*z+2*(gamma*delta+alpha*beta)*y+2*(beta*delta-alpha*gamma)*x+oz+params[2]
 
     return (rotx,roty,rotz)
-
-def get_M(x1,x2,x3):
-    M = np.array([[1,0,0,0,x3/16.,-x2/16.],[0,1,0,-x3/16.,0,x1/16.],[0,0,1,x2/16.,-x1/16.,0]])
+def get_M(x1_org,x2_org,x3_org,k=16.):
+    x1 = x1_org/k
+    x2 = x2_org/k
+    x3 = x3_org/k
+    M = np.array([[1,0,0,0,x3,-x2],[0,1,0,-x3,0,x1],[0,0,1,x2,-x1,0]])
     return M
 
 def to_degree(radian):
@@ -129,12 +130,15 @@ def print_results(errors, Ps, res):
     print 'translation (in mm):', params[:3]*res
     print 'rotations (in degrees):', params[3:]*180/np.pi
 
-def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, alpha = 0.2, decrease_factor = 0.25, P_initial = np.array([0,0,0,0,0,0]), plot = True):
+def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, 
+                 divide_factor = 16., alpha = 0.2, decrease_factor = 0.25, 
+                 P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 20):
 
     volume_shape = Vol1.shape
     if (volume_shape[0] == 26): res = '10'
     if (volume_shape[0] == 32): res = '8'
     if (volume_shape[0] == 40): res = '6_4'
+    rad = res_to_rad(res)
     xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     ox = volume_shape[1]/2.-0.5
     oy = volume_shape[0]/2.-0.5
@@ -146,14 +150,14 @@ def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, alpha = 0.2, de
     errors = []
     errors.append(1.0)
     
-    volume_shape = Vol1.shape
-    for counter in xrange(20):
+    for counter in xrange(max_iter):
         print counter,
         #print P_s
         P_old = P_new.copy()
         
         # Get the new coordinates by rotating the volume by the opposite amount of P_s
-        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, -1.*P_old, ox, oy, oz)
+        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, -1.*P_old, ox, oy, oz,divide_factor)
+        #print dest_x
         # Initilization
         Jr = np.empty([volume_shape[0]*volume_shape[1]*volume_shape[2],6])
         Jr_rP = np.zeros([6,])
@@ -163,12 +167,13 @@ def Gauss_Newton(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, alpha = 0.2, de
             for j in xrange(volume_shape[1]):
                 for k in xrange(volume_shape[2]):
                     dest[i,j,k] = tricubic_interp(volume_shape,Vol2_derivatives,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k]) 
-                    M = get_M(yy[i,j,k]-ox,xx[i,j,k]-oy,zz[i,j,k]-oz)
+                    M = get_M(yy[i,j,k]-ox,xx[i,j,k]-oy,zz[i,j,k]-oz,divide_factor)
                     for ii in xrange(len(P_old)):
                         Jr[idx,ii] = -1.*Vol1_derivatives[j,i,k].dot(M[:,ii])
                         Jr_rP[ii] += Jr[idx,ii]*(Vol1[yy[i,j,k],xx[i,j,k],zz[i,j,k]]-dest[i,j,k])
                     idx += 1
-        error = cf_ssd(Vol1,dest)
+
+        error = cf_ssd(Vol1,sphere_mask(dest,rad))
 
         ## if error is getting larger, go back one step and decrease alpha
         if(error > errors[-1]):
