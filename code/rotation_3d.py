@@ -71,85 +71,85 @@ X_inv =np.array([
 ( 8,-8,-8, 8,-8, 8, 8,-8, 4, 4,-4,-4,-4,-4, 4, 4, 4,-4, 4,-4,-4, 4,-4, 4, 4,-4,-4, 4, 4,-4,-4, 4, 2, 2, 2, 2,-2,-2,-2,-2, 2, 2,-2,-2, 2, 2,-2,-2, 2,-2, 2,-2, 2,-2, 2,-2, 1, 1, 1, 1, 1, 1, 1, 1)
 ])
 
-def get_target_Y(x, y, z):
-    Y = np.zeros([1,64])
-    Y[:,0] = 1.
-    Y[:,1] = x
-    Y[:,2] = x**2
-    Y[:,3] = x**3
-    Y[:,4] = y
-    Y[:,5] = x*y
-    Y[:,6] = x**2*y
-    Y[:,7] = x**3*y
-    Y[:,8] = y**2
-    Y[:,9] = x*y**2
-    Y[:,10] = x**2*y**2
-    Y[:,11] = x**3*y**2
-    Y[:,12] = y**3
-    Y[:,13] = x*y**3
-    Y[:,14] = x**2*y**3
-    Y[:,15] = x**3*y**3
+def get_target_Y(z, y, x):
+    Y = np.empty([z.shape[1],z.shape[0],64])
+    Y[:,:,0] = 1.
+    Y[:,:,1] = x
+    Y[:,:,2] = x**2
+    Y[:,:,3] = x**3
+    Y[:,:,4] = y
+    Y[:,:,5] = x*y
+    Y[:,:,6] = x**2*y
+    Y[:,:,7] = x**3*y
+    Y[:,:,8] = y**2
+    Y[:,:,9] = x*y**2
+    Y[:,:,10] = x**2*y**2
+    Y[:,:,11] = x**3*y**2
+    Y[:,:,12] = y**3
+    Y[:,:,13] = x*y**3
+    Y[:,:,14] = x**2*y**3
+    Y[:,:,15] = x**3*y**3
     
 
-    Y[:,16] = z
-    Y[:,17] = x*z
-    Y[:,18] = x**2*z
-    Y[:,19] = x**3*z
-    Y[:,20] = y*z
-    Y[:,21] = x*y*z
-    Y[:,22] = x**2*y*z
-    Y[:,23] = x**3*y*z
-    Y[:,24] = y**2*z
-    Y[:,25] = x*y**2*z
-    Y[:,26] = x**2*y**2*z
-    Y[:,27] = x**3*y**2*z
-    Y[:,28] = y**3*z
-    Y[:,29] = x*y**3*z
-    Y[:,30] = x**2*y**3*z
-    Y[:,31] = x**3*y**3*z
+    Y[:,:,16] = z
+    Y[:,:,17] = x*z
+    Y[:,:,18] = x**2*z
+    Y[:,:,19] = x**3*z
+    Y[:,:,20] = y*z
+    Y[:,:,21] = x*y*z
+    Y[:,:,22] = x**2*y*z
+    Y[:,:,23] = x**3*y*z
+    Y[:,:,24] = y**2*z
+    Y[:,:,25] = x*y**2*z
+    Y[:,:,26] = x**2*y**2*z
+    Y[:,:,27] = x**3*y**2*z
+    Y[:,:,28] = y**3*z
+    Y[:,:,29] = x*y**3*z
+    Y[:,:,30] = x**2*y**3*z
+    Y[:,:,31] = x**3*y**3*z
     
-    Y[:,32] = z**2
-    Y[:,33] = x*z**2
-    Y[:,34] = x**2*z**2
-    Y[:,35] = x**3*z**2
-    Y[:,36] = y*z**2
-    Y[:,37] = x*y*z**2
-    Y[:,38] = x**2*y*z**2
-    Y[:,39] = x**3*y*z**2
-    Y[:,40] = y**2*z**2
-    Y[:,41] = x*y**2*z**2
-    Y[:,42] = x**2*y**2*z**2
-    Y[:,43] = x**3*y**2*z**2
-    Y[:,44] = y**3*z**2
-    Y[:,45] = x*y**3*z**2
-    Y[:,46] = x**2*y**3*z**2
-    Y[:,47] = x**3*y**3*z**2
+    Y[:,:,32] = z**2
+    Y[:,:,33] = x*z**2
+    Y[:,:,34] = x**2*z**2
+    Y[:,:,35] = x**3*z**2
+    Y[:,:,36] = y*z**2
+    Y[:,:,37] = x*y*z**2
+    Y[:,:,38] = x**2*y*z**2
+    Y[:,:,39] = x**3*y*z**2
+    Y[:,:,40] = y**2*z**2
+    Y[:,:,41] = x*y**2*z**2
+    Y[:,:,42] = x**2*y**2*z**2
+    Y[:,:,43] = x**3*y**2*z**2
+    Y[:,:,44] = y**3*z**2
+    Y[:,:,45] = x*y**3*z**2
+    Y[:,:,46] = x**2*y**3*z**2
+    Y[:,:,47] = x**3*y**3*z**2
     
-    Y[:,48] = z**3
-    Y[:,49] = x*z**3
-    Y[:,50] = x**2*z**3
-    Y[:,51] = x**3*z**3
-    Y[:,52] = y*z**3
-    Y[:,53] = x*y*z**3
-    Y[:,54] = x**2*y*z**3
-    Y[:,55] = x**3*y*z**3
-    Y[:,56] = y**2*z**3
-    Y[:,57] = x*y**2*z**3
-    Y[:,58] = x**2*y**2*z**3
-    Y[:,59] = x**3*y**2*z**3
-    Y[:,60] = y**3*z**3
-    Y[:,61] = x*y**3*z**3
-    Y[:,62] = x**2*y**3*z**3
-    Y[:,63] = x**3*y**3*z**3
+    Y[:,:,48] = z**3
+    Y[:,:,49] = x*z**3
+    Y[:,:,50] = x**2*z**3
+    Y[:,:,51] = x**3*z**3
+    Y[:,:,52] = y*z**3
+    Y[:,:,53] = x*y*z**3
+    Y[:,:,54] = x**2*y*z**3
+    Y[:,:,55] = x**3*y*z**3
+    Y[:,:,56] = y**2*z**3
+    Y[:,:,57] = x*y**2*z**3
+    Y[:,:,58] = x**2*y**2*z**3
+    Y[:,:,59] = x**3*y**2*z**3
+    Y[:,:,60] = y**3*z**3
+    Y[:,:,61] = x*y**3*z**3
+    Y[:,:,62] = x**2*y**3*z**3
+    Y[:,:,63] = x**3*y**3*z**3
     return Y
 
 def tricubic_derivatives(volume):
     shape = volume.shape
     dest = np.empty(shape)
-    tricubic_derivative_dict = {}
+    tricubic_derivative_dict = np.empty([shape[0]+30,shape[1]+30,shape[2]+30,64])
     for i in xrange(-15,shape[0]+15):
-        for j in xrange(-15,shape[0]+15):
-            for k in xrange(-15,shape[0]+15):
+        for j in xrange(-15,shape[1]+15):
+            for k in xrange(-15,shape[2]+15):
                 # Take care of boundary conditions
                 x1 = i
                 y1 = j
@@ -184,94 +184,95 @@ def tricubic_derivatives(volume):
                 Y = np.zeros([64,])
                 # values of f(x,y,z) at each corner.
                 Y[0] = volume[y1,x1,z1]
-                Y[1] = volume[y1,x2,z1]
-                Y[2] = volume[y2,x1,z1]
-                Y[3] = volume[y2,x2,z1]
-                Y[4] = volume[y1,x1,z2]
-                Y[5] = volume[y1,x2,z2]
-                Y[6] = volume[y2,x1,z2]
+                Y[1] = volume[y1,x1,z2]
+                Y[2] = volume[y1,x2,z1]
+                Y[3] = volume[y1,x2,z2]
+                Y[4] = volume[y2,x1,z1]
+                Y[5] = volume[y2,x1,z2]
+                Y[6] = volume[y2,x2,z1]
                 Y[7] = volume[y2,x2,z2]
 
                 # values of df/dx at each corner.
-                Y[8] = ((volume[y1,x2,z1]-volume[y1,x0,z1])/2.)
-                Y[9] = ((volume[y1,x3,z1]-volume[y1,x1,z1])/2.)
-                Y[10] = ((volume[y2,x2,z1]-volume[y2,x0,z1])/2.)
-                Y[11] = ((volume[y2,x3,z1]-volume[y2,x1,z1])/2.)
-                Y[12] = ((volume[y1,x2,z2]-volume[y1,x0,z2])/2.)
-                Y[13] = ((volume[y1,x3,z2]-volume[y1,x1,z2])/2.)
-                Y[14] = ((volume[y2,x2,z2]-volume[y2,x0,z2])/2.)
-                Y[15] = ((volume[y2,x3,z2]-volume[y2,x1,z2])/2.)
+                Y[8] = ((volume[y1,x1,z2]-volume[y1,x1,z0])/2.)
+                Y[9] = ((volume[y1,x1,z3]-volume[y1,x1,z1])/2.)
+                Y[10] = ((volume[y1,x2,z2]-volume[y1,x2,z0])/2.)
+                Y[11] = ((volume[y1,x2,z3]-volume[y1,x2,z1])/2.)
+                Y[12] = ((volume[y2,x1,z2]-volume[y2,x1,z0])/2.)
+                Y[13] = ((volume[y2,x1,z3]-volume[y2,x1,z1])/2.)
+                Y[14] = ((volume[y2,x2,z2]-volume[y2,x2,z0])/2.)
+                Y[15] = ((volume[y2,x2,z3]-volume[y2,x2,z1])/2.)
 
                 # values of df/dy at each corner.
-                Y[16] = ((volume[y2,x1,z1]-volume[y0,x1,z1])/2.)
-                Y[17] = ((volume[y2,x2,z1]-volume[y0,x2,z1])/2.)
-                Y[18] = ((volume[y3,x1,z1]-volume[y1,x1,z1])/2.)
-                Y[19] = ((volume[y3,x2,z1]-volume[y1,x2,z1])/2.)
-                Y[20] = ((volume[y2,x1,z2]-volume[y0,x1,z2])/2.)
-                Y[21] = ((volume[y2,x2,z2]-volume[y0,x2,z2])/2.)
-                Y[22] = ((volume[y3,x1,z2]-volume[y1,x1,z2])/2.)
-                Y[23] = ((volume[y3,x2,z2]-volume[y1,x2,z2])/2.)
+                Y[16] = ((volume[y1,x2,z1]-volume[y1,x0,z1])/2.)
+                Y[17] = ((volume[y1,x2,z2]-volume[y1,x0,z2])/2.)
+                Y[18] = ((volume[y1,x3,z1]-volume[y1,x1,z1])/2.)
+                Y[19] = ((volume[y1,x3,z2]-volume[y1,x1,z2])/2.)
+                Y[20] = ((volume[y2,x2,z1]-volume[y2,x0,z1])/2.)
+                Y[21] = ((volume[y2,x2,z2]-volume[y2,x0,z2])/2.)
+                Y[22] = ((volume[y2,x3,z1]-volume[y2,x1,z1])/2.)
+                Y[23] = ((volume[y2,x3,z2]-volume[y2,x1,z2])/2.)
 
                 # values of df/dz at each corner.
-                Y[24] = ((volume[y1,x1,z2]-volume[y1,x1,z0])/2.)
-                Y[25] = ((volume[y1,x2,z2]-volume[y1,x2,z0])/2.)
-                Y[26] = ((volume[y2,x1,z2]-volume[y2,x1,z0])/2.)
-                Y[27] = ((volume[y2,x2,z2]-volume[y2,x2,z0])/2.)
-                Y[28] = ((volume[y1,x1,z3]-volume[y1,x1,z1])/2.)
-                Y[29] = ((volume[y1,x2,z3]-volume[y1,x2,z1])/2.)
-                Y[30] = ((volume[y2,x1,z3]-volume[y2,x1,z1])/2.)
-                Y[31] = ((volume[y2,x2,z3]-volume[y2,x2,z1])/2.)
+                Y[24] = ((volume[y2,x1,z1]-volume[y0,x1,z1])/2.)
+                Y[25] = ((volume[y2,x1,z2]-volume[y0,x1,z2])/2.)
+                Y[26] = ((volume[y2,x2,z1]-volume[y0,x2,z1])/2.)
+                Y[27] = ((volume[y2,x2,z2]-volume[y0,x2,z2])/2.)
+                Y[28] = ((volume[y3,x1,z1]-volume[y1,x1,z1])/2.)
+                Y[29] = ((volume[y3,x1,z2]-volume[y1,x1,z2])/2.)
+                Y[30] = ((volume[y3,x2,z1]-volume[y1,x2,z1])/2.)
+                Y[31] = ((volume[y3,x2,z2]-volume[y1,x2,z2])/2.)
 
                 # values of d2f/dxdy at each corner.
-                Y[32] = ((volume[y2,x2,z1]-volume[y2,x0,z1]-volume[y0,x2,z1]+volume[y0,x0,z1])/4.)
-                Y[33] = ((volume[y2,x3,z1]-volume[y2,x1,z1]-volume[y0,x3,z1]+volume[y0,x1,z1])/4.)
-                Y[34] = ((volume[y3,x2,z1]-volume[y3,x0,z1]-volume[y1,x2,z1]+volume[y1,x0,z1])/4.)
-                Y[35] = ((volume[y3,x3,z1]-volume[y3,x1,z1]-volume[y1,x3,z1]+volume[y1,x1,z1])/4.)
-                Y[36] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y0,x2,z2]+volume[y0,x0,z2])/4.)
-                Y[37] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y0,x3,z2]+volume[y0,x1,z2])/4.)
-                Y[38] = ((volume[y3,x2,z2]-volume[y3,x0,z2]-volume[y1,x2,z2]+volume[y1,x0,z2])/4.)
-                Y[39] = ((volume[y3,x3,z2]-volume[y3,x1,z2]-volume[y1,x3,z2]+volume[y1,x1,z2])/4.)
+                Y[32] = ((volume[y1,x2,z2]-volume[y1,x0,z2]-volume[y1,x2,z0]+volume[y1,x0,z0])/4.)
+                Y[33] = ((volume[y1,x2,z3]-volume[y1,x0,z3]-volume[y1,x2,z1]+volume[y1,x0,z1])/4.)
+                Y[34] = ((volume[y1,x3,z2]-volume[y1,x1,z2]-volume[y1,x3,z0]+volume[y1,x1,z0])/4.)
+                Y[35] = ((volume[y1,x3,z3]-volume[y1,x1,z3]-volume[y1,x3,z1]+volume[y1,x1,z1])/4.)
+                Y[36] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y2,x2,z0]+volume[y2,x0,z0])/4.)
+                Y[37] = ((volume[y2,x2,z3]-volume[y2,x0,z3]-volume[y2,x2,z1]+volume[y2,x0,z1])/4.)
+                Y[38] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y2,x3,z0]+volume[y2,x1,z0])/4.)
+                Y[39] = ((volume[y2,x3,z3]-volume[y2,x1,z3]-volume[y2,x3,z1]+volume[y2,x1,z1])/4.)
 
                 # values of d2f/dxdz at each corner.
-                Y[40] = ((volume[y1,x2,z2]-volume[y1,x0,z2]-volume[y1,x2,z0]+volume[y1,x0,z0])/4.)
-                Y[41] = ((volume[y1,x3,z2]-volume[y1,x1,z2]-volume[y1,x3,z0]+volume[y1,x1,z0])/4.)
-                Y[42] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y2,x2,z0]+volume[y2,x0,z0])/4.)
-                Y[43] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y2,x3,z0]+volume[y2,x1,z0])/4.)
-                Y[44] = ((volume[y1,x2,z3]-volume[y1,x0,z3]-volume[y1,x2,z1]+volume[y1,x0,z1])/4.)
-                Y[45] = ((volume[y1,x3,z3]-volume[y1,x1,z3]-volume[y1,x3,z1]+volume[y1,x1,z1])/4.)
-                Y[46] = ((volume[y2,x2,z3]-volume[y2,x0,z3]-volume[y2,x2,z1]+volume[y2,x0,z1])/4.)
-                Y[47] = ((volume[y2,x3,z3]-volume[y2,x1,z3]-volume[y2,x3,z1]+volume[y2,x1,z1])/4.)
+                Y[40] = ((volume[y2,x1,z2]-volume[y0,x1,z2]-volume[y2,x1,z0]+volume[y0,x1,z0])/4.)
+                Y[41] = ((volume[y2,x1,z3]-volume[y0,x1,z3]-volume[y2,x1,z1]+volume[y0,x1,z1])/4.)
+                Y[42] = ((volume[y2,x2,z2]-volume[y0,x2,z2]-volume[y2,x2,z0]+volume[y0,x2,z0])/4.)
+                Y[43] = ((volume[y2,x2,z3]-volume[y0,x2,z3]-volume[y2,x2,z1]+volume[y0,x2,z1])/4.)
+                Y[44] = ((volume[y3,x1,z2]-volume[y1,x1,z2]-volume[y3,x1,z0]+volume[y1,x1,z0])/4.)
+                Y[45] = ((volume[y3,x1,z3]-volume[y1,x1,z3]-volume[y3,x1,z1]+volume[y1,x1,z1])/4.)
+                Y[46] = ((volume[y3,x2,z2]-volume[y1,x2,z2]-volume[y3,x2,z0]+volume[y1,x2,z0])/4.)
+                Y[47] = ((volume[y3,x2,z3]-volume[y1,x2,z3]-volume[y3,x2,z1]+volume[y1,x2,z1])/4.)
 
                 # values of d2f/dydz at each corner.
-                Y[48] = ((volume[y2,x1,z2]-volume[y0,x1,z2]-volume[y2,x1,z0]+volume[y0,x1,z0])/4.)
-                Y[49] = ((volume[y2,x2,z2]-volume[y0,x2,z2]-volume[y2,x2,z0]+volume[y0,x2,z0])/4.)
-                Y[50] = ((volume[y3,x1,z2]-volume[y1,x1,z2]-volume[y3,x1,z0]+volume[y1,x1,z0])/4.)
-                Y[51] = ((volume[y3,x2,z2]-volume[y1,x2,z2]-volume[y3,x2,z0]+volume[y1,x2,z0])/4.)
-                Y[52] = ((volume[y2,x1,z3]-volume[y0,x1,z3]-volume[y2,x1,z1]+volume[y0,x1,z1])/4.)
-                Y[53] = ((volume[y2,x2,z3]-volume[y0,x2,z3]-volume[y2,x2,z1]+volume[y0,x2,z1])/4.)
-                Y[54] = ((volume[y3,x1,z3]-volume[y1,x1,z3]-volume[y3,x1,z1]+volume[y1,x1,z1])/4.)
-                Y[55] = ((volume[y3,x2,z3]-volume[y1,x2,z3]-volume[y3,x2,z1]+volume[y1,x2,z1])/4.)
+                Y[48] = ((volume[y2,x2,z1]-volume[y2,x0,z1]-volume[y0,x2,z1]+volume[y0,x0,z1])/4.)
+                Y[49] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y0,x2,z2]+volume[y0,x0,z2])/4.)
+                Y[50] = ((volume[y2,x3,z1]-volume[y2,x1,z1]-volume[y0,x3,z1]+volume[y0,x1,z1])/4.)
+                Y[51] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y0,x3,z2]+volume[y0,x1,z2])/4.)
+                Y[52] = ((volume[y3,x2,z1]-volume[y3,x0,z1]-volume[y1,x2,z1]+volume[y1,x0,z1])/4.)
+                Y[53] = ((volume[y3,x2,z2]-volume[y3,x0,z2]-volume[y1,x2,z2]+volume[y1,x0,z2])/4.)
+                Y[54] = ((volume[y3,x3,z1]-volume[y3,x1,z1]-volume[y1,x3,z1]+volume[y1,x1,z1])/4.)
+                Y[55] = ((volume[y3,x3,z2]-volume[y3,x1,z2]-volume[y1,x3,z2]+volume[y1,x1,z2])/4.)
 
                 # values of d3f/dxdydz at each corner.
-                Y[56] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y0,x2,z2]+volume[y0,x0,z2]
-                          -volume[y2,x2,z0]-volume[y2,x0,z0]-volume[y0,x2,z0]+volume[y0,x0,z0])/8.)
-                Y[57] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y0,x3,z2]+volume[y0,x1,z2]
-                          -volume[y2,x3,z0]-volume[y2,x1,z0]-volume[y0,x3,z0]+volume[y0,x1,z0])/8.)
-                Y[58] = ((volume[y3,x2,z2]-volume[y3,x0,z2]-volume[y1,x2,z2]+volume[y1,x0,z2]
-                          -volume[y3,x2,z0]-volume[y3,x0,z0]-volume[y1,x2,z0]+volume[y1,x0,z0])/8.)
-                Y[59] = ((volume[y3,x3,z2]-volume[y3,x1,z2]-volume[y1,x3,z2]+volume[y1,x1,z2]
-                          -volume[y3,x3,z0]-volume[y3,x1,z0]-volume[y1,x3,z0]+volume[y1,x1,z0])/8.)
+                Y[56] = ((volume[y2,x2,z2]-volume[y2,x0,z2]-volume[y2,x2,z0]+volume[y2,x0,z0])
+                          -(volume[y0,x2,z2]-volume[y0,x0,z2]-volume[y0,x2,z0]+volume[y0,x0,z0]))/8.
+                Y[57] = ((volume[y2,x2,z3]-volume[y2,x0,z3]-volume[y2,x2,z1]+volume[y2,x0,z1])
+                          -(volume[y0,x2,z3]-volume[y0,x0,z3]-volume[y0,x2,z1]+volume[y0,x0,z1]))/8.
+                Y[58] = ((volume[y2,x3,z2]-volume[y2,x1,z2]-volume[y2,x3,z0]+volume[y2,x1,z0])
+                          -(volume[y0,x3,z2]-volume[y0,x1,z2]-volume[y0,x3,z0]+volume[y0,x1,z0]))/8.
+                Y[59] = ((volume[y2,x3,z3]-volume[y2,x1,z3]-volume[y2,x3,z1]+volume[y2,x1,z1])
+                          -(volume[y0,x3,z3]-volume[y0,x1,z3]-volume[y0,x3,z1]+volume[y0,x1,z1]))/8.
 
-                Y[60] = ((volume[y2,x2,z3]-volume[y2,x0,z3]-volume[y0,x2,z3]+volume[y0,x0,z3]
-                          -volume[y2,x2,z1]-volume[y2,x0,z1]-volume[y0,x2,z1]+volume[y0,x0,z1])/8.)
-                Y[61] = ((volume[y2,x3,z3]-volume[y2,x1,z3]-volume[y0,x3,z3]+volume[y0,x1,z3]
-                          -volume[y2,x3,z1]-volume[y2,x1,z1]-volume[y0,x3,z1]+volume[y0,x1,z1])/8.)
-                Y[62] = ((volume[y3,x2,z3]-volume[y3,x0,z3]-volume[y1,x2,z3]+volume[y1,x0,z3]
-                          -volume[y3,x2,z1]-volume[y3,x0,z1]-volume[y1,x2,z1]+volume[y1,x0,z1])/8.)
-                Y[63] = ((volume[y3,x3,z3]-volume[y3,x1,z3]-volume[y1,x3,z3]+volume[y1,x1,z3]
-                          -volume[y3,x3,z1]-volume[y3,x1,z1]-volume[y1,x3,z1]+volume[y1,x1,z1])/8.) 
+                Y[60] = ((volume[y3,x2,z2]-volume[y3,x0,z2]-volume[y3,x2,z0]+volume[y3,x0,z0])
+                          -(volume[y1,x2,z2]-volume[y1,x0,z2]-volume[y1,x2,z0]+volume[y1,x0,z0]))/8.
+                Y[61] = ((volume[y3,x2,z3]-volume[y3,x0,z3]-volume[y3,x2,z1]+volume[y3,x0,z1])
+                          -(volume[y1,x2,z3]-volume[y1,x0,z3]-volume[y1,x2,z1]+volume[y1,x0,z1]))/8.
+                Y[62] = ((volume[y3,x3,z2]-volume[y3,x1,z2]-volume[y3,x3,z0]+volume[y3,x1,z0])
+                          -(volume[y1,x3,z2]-volume[y1,x1,z2]-volume[y1,x3,z0]+volume[y1,x1,z0]))/8.
+                Y[63] = ((volume[y3,x3,z3]-volume[y3,x1,z3]-volume[y3,x3,z1]+volume[y3,x1,z1])
+                          -(volume[y1,x3,z3]-volume[y1,x1,z3]-volume[y1,x3,z1]+volume[y1,x1,z1]))/8.
 
-                tricubic_derivative_dict[(i,j,k)] = Y
+                #tricubic_derivative_dict[(j,i,k)] = np.dot(X_inv,Y)
+                tricubic_derivative_dict[j+15,i+15,k+15,:] = np.dot(X_inv,Y)
     return tricubic_derivative_dict
 '''
                 # Clip Range
@@ -301,15 +302,15 @@ def tricubic_interp(shape, derivatives, x, y, z):
     z1 = np.floor(z).astype(int)
 
     # load in precomputed first and second derivatives for this volume
-    Y = derivatives[(x1,y1,z1)]
+    #Y = derivatives[(y1,x1,z1)]
 
     # Compute A
-    A = np.dot(X_inv,Y)
+    A = derivatives[y1+15,x1+15,z1+15]
     # get vector Y from points that need to be interpolated
-    target_Y = get_target_Y(x-x1, y-y1, z-z1)
+    target_Y = get_target_Y(y-y1, x-x1, z-z1)
     # compute result
-    result = np.dot(target_Y, A)
-    return result[0]
+    result = np.sum(target_Y * A, axis=2)
+    return result
 
 # Trilinear interplation
 def trilinear_interp(volume, x, y, z):
