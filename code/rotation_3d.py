@@ -143,6 +143,78 @@ def get_target_Y(z, y, x):
     Y[:,:,63] = x**3*y**3*z**3
     return Y
 
+def get_target_Y_1d(x, y, z):
+    Y = np.zeros([1,64])
+    Y[:,0] = 1.
+    Y[:,1] = x
+    Y[:,2] = x**2
+    Y[:,3] = x**3
+    Y[:,4] = y
+    Y[:,5] = x*y
+    Y[:,6] = x**2*y
+    Y[:,7] = x**3*y
+    Y[:,8] = y**2
+    Y[:,9] = x*y**2
+    Y[:,10] = x**2*y**2
+    Y[:,11] = x**3*y**2
+    Y[:,12] = y**3
+    Y[:,13] = x*y**3
+    Y[:,14] = x**2*y**3
+    Y[:,15] = x**3*y**3
+    
+
+    Y[:,16] = z
+    Y[:,17] = x*z
+    Y[:,18] = x**2*z
+    Y[:,19] = x**3*z
+    Y[:,20] = y*z
+    Y[:,21] = x*y*z
+    Y[:,22] = x**2*y*z
+    Y[:,23] = x**3*y*z
+    Y[:,24] = y**2*z
+    Y[:,25] = x*y**2*z
+    Y[:,26] = x**2*y**2*z
+    Y[:,27] = x**3*y**2*z
+    Y[:,28] = y**3*z
+    Y[:,29] = x*y**3*z
+    Y[:,30] = x**2*y**3*z
+    Y[:,31] = x**3*y**3*z
+    
+    Y[:,32] = z**2
+    Y[:,33] = x*z**2
+    Y[:,34] = x**2*z**2
+    Y[:,35] = x**3*z**2
+    Y[:,36] = y*z**2
+    Y[:,37] = x*y*z**2
+    Y[:,38] = x**2*y*z**2
+    Y[:,39] = x**3*y*z**2
+    Y[:,40] = y**2*z**2
+    Y[:,41] = x*y**2*z**2
+    Y[:,42] = x**2*y**2*z**2
+    Y[:,43] = x**3*y**2*z**2
+    Y[:,44] = y**3*z**2
+    Y[:,45] = x*y**3*z**2
+    Y[:,46] = x**2*y**3*z**2
+    Y[:,47] = x**3*y**3*z**2
+    
+    Y[:,48] = z**3
+    Y[:,49] = x*z**3
+    Y[:,50] = x**2*z**3
+    Y[:,51] = x**3*z**3
+    Y[:,52] = y*z**3
+    Y[:,53] = x*y*z**3
+    Y[:,54] = x**2*y*z**3
+    Y[:,55] = x**3*y*z**3
+    Y[:,56] = y**2*z**3
+    Y[:,57] = x*y**2*z**3
+    Y[:,58] = x**2*y**2*z**3
+    Y[:,59] = x**3*y**2*z**3
+    Y[:,60] = y**3*z**3
+    Y[:,61] = x*y**3*z**3
+    Y[:,62] = x**2*y**3*z**3
+    Y[:,63] = x**3*y**3*z**3
+    return Y
+
 def tricubic_derivatives(volume):
     shape = volume.shape
     dest = np.empty(shape)
@@ -312,6 +384,30 @@ def tricubic_interp(shape, derivatives, x, y, z):
     result = np.sum(target_Y * A, axis=2)
     return result
 
+# Tricubic interpolation
+def tricubic_interp_1d(shape, derivatives, x, y, z):
+    '''
+    shape: Shape of the Volume to be interpolated
+    derivatives: precomputed derivatives for the volume
+    x,y,z: point at which to be interpolated
+    '''
+    # find the closes grid of the target points
+    x1 = np.floor(x).astype(int)
+    y1 = np.floor(y).astype(int)
+    z1 = np.floor(z).astype(int)
+
+    # load in precomputed first and second derivatives for this volume
+    Y = derivatives[(y1+15,x1+15,z1+15)]
+
+    # Compute A
+    A = np.dot(X_inv,Y)
+    # get vector Y from points that need to be interpolated
+    target_Y = get_target_Y_1d(y-y1, x-x1, z-z1)
+    # compute result
+    result = np.dot(target_Y, A)
+    return result[0]
+
+
 # Trilinear interplation
 def trilinear_interp(volume, x, y, z):
     x = np.asarray(x)
@@ -325,14 +421,14 @@ def trilinear_interp(volume, x, y, z):
     y1 = y0 + 1
     z0 = np.floor(z).astype(int)
     z1 = z0 + 1
-    
+    volume_shape = volume.shape
     # Clip
-    x0 = x0.clip(0, volume.shape[0]-1)
-    x1 = x1.clip(0, volume.shape[0]-1)
-    y0 = y0.clip(0, volume.shape[1]-1)
-    y1 = y1.clip(0, volume.shape[1]-1)
-    z0 = z0.clip(0, volume.shape[2]-1)
-    z1 = z1.clip(0, volume.shape[2]-1)    
+    x0 = x0.clip(0, volume_shape[0]-1)
+    x1 = x1.clip(0, volume_shape[0]-1)
+    y0 = y0.clip(0, volume_shape[1]-1)
+    y1 = y1.clip(0, volume_shape[1]-1)
+    z0 = z0.clip(0, volume_shape[2]-1)
+    z1 = z1.clip(0, volume_shape[2]-1)    
 
     # define some coefficients
     xd = x-x0
@@ -402,6 +498,7 @@ def rotate_coords_3d(x, y, z, theta, wx, wy, wz, ox,oy,oz):
         wz = wz/norm
     s,c = np.sin(theta),np.cos(theta)
     x, y, z = x - ox, y - oy, z - oz
+    #print x.shape,y.shape,z.shape
     rotx = c*x+s*(wy*z-wz*y)+(1-c)*(wx*x+wy*y+wz*z)*wx + ox
     roty = c*y+s*(wz*x-wx*z)+(1-c)*(wx*x+wy*y+wz*z)*wy + oy
     rotz = c*z+s*(wx*y-wy*x)+(1-c)*(wx*x+wy*y+wz*z)*wz + oz
@@ -476,7 +573,7 @@ def volrotate_trilinear(volume_org, theta, wx, wy, wz,xx,yy,zz):
     ox = shape[1]/2.-0.5
     oy = shape[0]/2.-0.5
     oz = shape[2]/2.-0.5
-    
+
     if(shape[0] == 26): res = '10mm'
     elif(shape[0] == 32): res = '8mm'
     else: res = '6_4mm'
@@ -509,12 +606,10 @@ def volrotate_tricubic_matrix(volume_shape, tricubic_cache, gamma, beta, alpha,x
 
     dest = np.empty(volume_shape)
     for i in xrange(volume_shape[0]):
-        for j in xrange(volume_shape[1]):
-            for k in xrange(volume_shape[2]):
-                dest[i,j,k] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k]) 
+        dest[i,:,:] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:]) 
     return dest
 
-def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx,yy,zz):
+def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx,yy,zz,random_points = False):
     '''
     volume_shape: shape of the input volume
     tricubic_cache: precomputed derivative values for each point
@@ -532,12 +627,14 @@ def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx,yy,zz)
     else: res = '6_4'
 
     dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
-
-    dest = np.empty(volume_shape)
-    for i in xrange(volume_shape[0]):
-        for j in xrange(volume_shape[1]):
-            for k in xrange(volume_shape[2]):
-                dest[i,j,k] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k]) 
+    if random_points:
+        dest = np.empty(dest_x.shape)
+        for i in xrange(dest_x.shape[0]):
+            dest[i] = tricubic_interp_1d(volume_shape,tricubic_cache,dest_x[i],dest_y[i],dest_z[i]) 
+    else:
+        dest = np.empty(volume_shape)
+        for i in xrange(volume_shape[0]):
+            dest[i,:,:] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:]) 
     return dest
 
 def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz, xx,yy,zz,interpolation = 'trilinear'):

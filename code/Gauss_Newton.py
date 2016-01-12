@@ -33,6 +33,14 @@ def sphere_mask(volume, radius, d=0.4):
 
     return mask_frequency * volume
 
+def get_nonzero_mask(volume, radius, d=0.4):
+    origin = np.array([(x - 1.0) / 2.0 for x in volume.shape])
+    mask_frequency = np.array([[[window(np.linalg.norm(np.array([x,y,z]) - origin), radius, d) 
+                                 for x in range(volume.shape[0])] for y in range(volume.shape[1])] 
+                               for z in range(volume.shape[2])])
+
+    return mask_frequency != 0
+    
 def get_mask_weights(volume, radius, d=0.4):
     origin = np.array([(x - 1.0) / 2.0 for x in volume.shape])
     mask_frequency = np.array([[[window(np.linalg.norm(np.array([x,y,z]) - origin), radius, d) 
@@ -216,7 +224,7 @@ def Gauss_Newton(Vol1, Vol1_Grad_P, Vol2, Vol2_derivatives,
     
     volume_shape = Vol1.shape
     for counter in xrange(max_iter):
-        print counter,
+        #print counter,
         P_old = P_new.copy()
         # Get the new coordinates by rotating the volume by the opposite amount of P_s
         dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, P_old, ox, oy, oz,divide_factor,volume_shape)

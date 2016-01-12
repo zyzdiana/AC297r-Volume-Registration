@@ -19,12 +19,21 @@ def plot_volumes(files):
 	plt.show()
 	plt.close(fig)
 
-def plot_volume(volume, res, rot=''):
+def plot_volume(volume, res, rot='',colorbar = False):
     fig, ax = plt.subplots(1,3)
     fig.set_figheight(3)
     fig.set_figwidth(10)
-    [ax[i].imshow(volume.max(axis=i), interpolation = 'None',cmap='gray') for i in xrange(3)]
-    plt.suptitle(res+'_'+rot, fontsize=20)
+    if colorbar:
+        for i in xrange(3):
+            axx = ax[i].imshow(volume.max(axis=i), interpolation = 'None',cmap='gray')
+            plt.axes(ax[i])
+            fig.colorbar(axx)
+    else:
+        [ax[i].imshow(volume.max(axis=i), interpolation = 'None',cmap='gray') for i in xrange(3)]
+    if(rot == ''):
+        plt.suptitle(res, fontsize=20)
+    else:
+        plt.suptitle(res+'_'+rot, fontsize=20)
     plt.show()
     plt.close(fig)
 

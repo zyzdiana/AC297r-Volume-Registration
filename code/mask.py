@@ -39,3 +39,13 @@ def sphere_mask(volume, radius):
 
     return mask_frequency * vol
 
+def get_nonzero_mask(volume_shape, radius):
+    ox = volume_shape[1]/2.-0.5
+    oy = volume_shape[0]/2.-0.5
+    oz = volume_shape[2]/2.-0.5
+    
+    r = volume_shape[0]/2.-0.5
+    
+    x,y,z = np.ogrid[-ox:volume_shape[1]-ox, -oy:volume_shape[0]-oy,-oz:volume_shape[2]-oz]
+    mask = (x*x + y*y + z*z <= r*r)
+    return mask
