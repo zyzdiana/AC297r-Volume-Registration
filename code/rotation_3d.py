@@ -397,13 +397,14 @@ def tricubic_interp_1d(shape, derivatives, x, y, z):
     z1 = np.floor(z).astype(int)
 
     # load in precomputed first and second derivatives for this volume
-    Y = derivatives[(y1+15,x1+15,z1+15)]
-
+    A = derivatives[(y1+15,x1+15,z1+15)]
+    print A
     # Compute A
-    A = np.dot(X_inv,Y)
+    #A = np.dot(X_inv,Y)
     # get vector Y from points that need to be interpolated
     target_Y = get_target_Y_1d(y-y1, x-x1, z-z1)
     # compute result
+    print target_Y
     result = np.dot(target_Y, A)
     return result[0]
 
