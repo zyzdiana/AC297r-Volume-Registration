@@ -563,7 +563,7 @@ def volrotate_trilinear_matrix(volume_org, gamma, beta, alpha,xx,yy,zz):
     dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
     return dest
 
-def volrotate_trilinear(volume_org, theta, wx, wy, wz,xx,yy,zz):
+def volrotate_trilinear(volume_org, theta, wx, wy, wz,xx=None,yy=None,zz=None):
     '''
     wx, wy, wz is the unit vector describing the axis of rotation
     theta is the rotation angle
@@ -575,11 +575,11 @@ def volrotate_trilinear(volume_org, theta, wx, wy, wz,xx,yy,zz):
     oy = shape[0]/2.-0.5
     oz = shape[2]/2.-0.5
 
-    if(shape[0] == 26): res = '10mm'
-    elif(shape[0] == 32): res = '8mm'
-    else: res = '6_4mm'
+    if(shape[0] == 26): res = '10'
+    elif(shape[0] == 32): res = '8'
+    else: res = '6_4'
 
-    #xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     
     dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
     dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
