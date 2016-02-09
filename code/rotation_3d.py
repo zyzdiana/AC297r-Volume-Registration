@@ -610,7 +610,7 @@ def volrotate_tricubic_matrix(volume_shape, tricubic_cache, gamma, beta, alpha,x
         dest[i,:,:] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:]) 
     return dest
 
-def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx,yy,zz,random_points = False):
+def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx=None,yy=None,zz=None,random_points = False):
     '''
     volume_shape: shape of the input volume
     tricubic_cache: precomputed derivative values for each point
@@ -626,7 +626,8 @@ def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx,yy,zz,
     if(volume_shape[0] == 26): res = '10'
     elif(volume_shape[0] == 32): res = '8'
     else: res = '6_4'
-
+    
+    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
     if random_points:
         dest = np.empty(dest_x.shape)

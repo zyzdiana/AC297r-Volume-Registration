@@ -34,6 +34,7 @@ def plot_volume(volume, res, rot='',colorbar = False):
         plt.suptitle(res, fontsize=20)
     else:
         plt.suptitle(res+'_'+rot, fontsize=20)
+    [ax[i].grid('off') for i in xrange(3)]
     plt.show()
     plt.close(fig)
 
@@ -70,3 +71,43 @@ def plot_cost_func_t(trans,cost_func,res,trans_ax, coil='body'):
     plt.xlabel('Translation (Voxel)')
     plt.ylabel('Cost function')
     plt.legend(loc='best')
+
+def plot_slices(volume, axis, title = ""):
+    s0,s1,s2 = volume.shape
+    if (s0 == 26): 
+        fig, ax = plt.subplots(4,7)
+        fig.set_figwidth(14)
+        fig.set_figheight(8)
+    if (s0 == 32):
+        fig, ax = plt.subplots(4,8)
+        fig.set_figwidth(16)
+        fig.set_figheight(8)
+    if (s0 == 40):
+        fig, ax = plt.subplots(4,10)
+        fig.set_figwidth(20)
+        fig.set_figheight(8)
+    axes = ax.ravel()
+    if axis == 0:
+        for i in xrange(s0):
+            axes[i].imshow(abs(np.fliplr(np.flipud(volume[i,:,:].T))), interpolation = 'None', cmap='gray')
+            axes[i].get_xaxis().set_ticks([])
+            axes[i].get_yaxis().set_ticks([])
+        plt.tight_layout()
+        plt.suptitle(title)
+        plt.show()
+    elif axis == 1:
+        for i in xrange(s0):
+            axes[i].imshow(abs(np.fliplr(np.flipud(volume[:,i,:].T))), interpolation = 'None', cmap='gray')
+            axes[i].get_xaxis().set_ticks([])
+            axes[i].get_yaxis().set_ticks([])
+        plt.tight_layout()
+        plt.suptitle(title)
+        plt.show()    
+    else: #axis == 2:
+        for i in xrange(s0):
+            axes[i].imshow(abs(volume[:,:,i].T), interpolation = 'None', cmap='gray')
+            axes[i].get_xaxis().set_ticks([])
+            axes[i].get_yaxis().set_ticks([])
+        plt.tight_layout()
+        plt.suptitle(title)
+        plt.show()    

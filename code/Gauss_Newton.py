@@ -130,17 +130,17 @@ def get_M(x1_org,x2_org,x3_org,k=16.):
     M = np.array([[0,0,-1,-x2,x1,0],[0,-1,0,x3,0,-x1],[-1,0,0,0,-x3,x2]])
     return M
 
-def get_gradient_P(volume, divide_factor=1., mask=True):
-    s0,s1,s2 = volume.shape
-    if (s0 == 26): res = '10'
-    if (s0 == 32): res = '8'
-    if (s0 == 40): res = '6_4'
+def get_gradient_P(derivatives, divide_factor=1., mask=True):
+    s0,s1,s2,s3 = derivatives.shape
+    if (s0 == 26+15): res = '10'
+    if (s0 == 32+15): res = '8'
+    if (s0 == 40+15): res = '6_4'
     rad = res_to_rad(res)
 
     xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
-    ox = s1/2.-0.5
-    oy = s0/2.-0.5
-    oz = s2/2.-0.5
+    ox = (s1-15)/2.-0.5
+    oy = (s0-15)/2.-0.5
+    oz = (s2-15)/2.-0.5
 
     derivatives = axis_derivatives(volume)
     derivativesP = np.empty([6,s0*s1*s2])
@@ -181,6 +181,7 @@ def trace_plot(Ps,res):
     plt.show()
     
 def plot_errors(errors):
+    plt.figure(figsize = [6,4])
     plt.plot(errors[1:])
     plt.title('Trace Plot for Errors',fontsize = 18)
     plt.xlabel('Iterations', fontsize = 15)
@@ -219,8 +220,11 @@ def Gauss_Newton(Vol1, Vol1_Grad_P, Vol2, Vol2_derivatives,
     P_old = P_initial.copy()
     P_new = P_old.copy()
     Ps.append(P_new)
+
+    Jr = Vol1_Grad_P.T
+
     errors = []
-    errors.append(1.0)
+    errors.append(np.sum(Vol1))
     
     volume_shape = Vol1.shape
     for counter in xrange(max_iter):
@@ -229,7 +233,7 @@ def Gauss_Newton(Vol1, Vol1_Grad_P, Vol2, Vol2_derivatives,
         # Get the new coordinates by rotating the volume by the opposite amount of P_s
         dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, P_old, ox, oy, oz,divide_factor,volume_shape)
         # Initilization
-        Jr = Vol1_Grad_P.T
+        #Jr = Vol1_Grad_P.T
         dest = np.empty(volume_shape)
 
         for i in xrange(volume_shape[0]):
@@ -239,19 +243,80 @@ def Gauss_Newton(Vol1, Vol1_Grad_P, Vol2, Vol2_derivatives,
             dest *= mask_weights
 
         flatR = np.ravel(Vol1-dest)
-        Jr_rP = -Vol1_Grad_P.dot(flatR)
         error = np.sum(flatR**2)
-        #print error,np.dot(np.linalg.inv(np.dot(Jr.T,Jr)),Jr_rP)
-        #print alpha
 
-        ## if error is getting larger, go back one step and decrease alpha
+        # if error is getting larger, go back one step and decrease alpha
         if(error > errors[-1]):
             alpha = alpha * decrease_factor
             P_new = Ps[-1]
         else:
             errors.append(error)
             Ps.append(P_old)
-            #print 'old',P_old,'new',P_new
+            Jr_rP = -Vol1_Grad_P.dot(flatR)
+            P_new = P_old - alpha*np.dot(np.linalg.inv(np.dot(Jr.T,Jr)),Jr_rP)
+            if((abs(P_new - P_old) < 1e-5).all()):
+                print 'Converged in %s iterations!' % counter
+                break
+    if(plot):
+        trace_plot(Ps, float('.'.join(res.split('_'))))
+        plot_errors(errors)
+    return errors, Ps
+
+def Gauss_Newton_1(Vol1, Vol2, Vol2_derivatives, 
+                 divide_factor = 1., alpha = 1., decrease_factor = 0.25, 
+                 P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 10, mask = True):
+    s0,s1,s2 = Vol1.shape
+    if (s0 == 26): res = '10'
+    if (s0 == 32): res = '8'
+    if (s0 == 40): res = '6_4'
+    rad = res_to_rad(res)
+
+    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    ox = s1/2.-0.5
+    oy = s0/2.-0.5
+    oz = s2/2.-0.5
+
+    if(mask):
+        mask_weights = get_mask_weights(Vol1,rad)
+
+    Ps = []
+    P_old = P_initial.copy()
+    P_new = P_old.copy()
+    Ps.append(P_new)
+    Vol2_derivs = Vol2_derivatives[15:-15,15:-15,15:-15,(1,4,16)]
+    Vol2_grap_P = get_gradient_P()
+    Jr = Vol1_Grad_P.T
+
+    errors = []
+    errors.append(np.sum(Vol1))
+    
+    volume_shape = Vol1.shape
+    for counter in xrange(max_iter):
+        #print counter,
+        P_old = P_new.copy()
+        # Get the new coordinates by rotating the volume by the opposite amount of P_s
+        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, -P_old, ox, oy, oz,divide_factor,volume_shape)
+        # Initilization
+        #Jr = Vol1_Grad_P.T
+        dest = np.empty(volume_shape)
+
+        for i in xrange(volume_shape[0]):
+            dest[i,:,:] = tricubic_interp(volume_shape,Vol2_derivatives,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:])
+
+        if(mask):
+            dest *= mask_weights
+
+        flatR = np.ravel(Vol1-dest)
+        error = np.sum(flatR**2)
+
+        # if error is getting larger, go back one step and decrease alpha
+        if(error > errors[-1]):
+            alpha = alpha * decrease_factor
+            P_new = Ps[-1]
+        else:
+            errors.append(error)
+            Ps.append(P_old)
+            Jr_rP = -Vol1_Grad_P.dot(flatR)
             P_new = P_old - alpha*np.dot(np.linalg.inv(np.dot(Jr.T,Jr)),Jr_rP)
             if((abs(P_new - P_old) < 1e-5).all()):
                 print 'Converged in %s iterations!' % counter
