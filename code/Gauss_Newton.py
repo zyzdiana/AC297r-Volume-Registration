@@ -33,19 +33,19 @@ def sphere_mask(volume, radius, d=0.4):
 
     return mask_frequency * volume
 
-def get_nonzero_mask(volume, radius, d=0.4):
-    origin = np.array([(x - 1.0) / 2.0 for x in volume.shape])
+def get_nonzero_mask(volume_shape, radius, d=0.4):
+    origin = np.array([(x - 1.0) / 2.0 for x in volume_shape])
     mask_frequency = np.array([[[window(np.linalg.norm(np.array([x,y,z]) - origin), radius, d) 
-                                 for x in range(volume.shape[0])] for y in range(volume.shape[1])] 
-                               for z in range(volume.shape[2])])
+                                 for x in range(volume_shape[0])] for y in range(volume_shape[1])] 
+                               for z in range(volume_shape[2])])
 
     return mask_frequency != 0
     
-def get_mask_weights(volume, radius, d=0.4):
-    origin = np.array([(x - 1.0) / 2.0 for x in volume.shape])
+def get_mask_weights(volume_shape, radius, d=0.4):
+    origin = np.array([(x - 1.0) / 2.0 for x in volume_shape])
     mask_frequency = np.array([[[window(np.linalg.norm(np.array([x,y,z]) - origin), radius, d) 
-                                 for x in range(volume.shape[0])] for y in range(volume.shape[1])] 
-                               for z in range(volume.shape[2])])
+                                 for x in range(volume_shape[0])] for y in range(volume_shape[1])] 
+                               for z in range(volume_shape[2])])
 
     return mask_frequency
 
@@ -130,23 +130,23 @@ def get_M(x1_org,x2_org,x3_org,k=16.):
     M = np.array([[0,0,-1,-x2,x1,0],[0,-1,0,x3,0,-x1],[-1,0,0,0,-x3,x2]])
     return M
 
-def get_gradient_P(derivatives, divide_factor=1., mask=True):
-    s0,s1,s2,s3 = derivatives.shape
-    if (s0 == 26+15): res = '10'
-    if (s0 == 32+15): res = '8'
-    if (s0 == 40+15): res = '6_4'
+def get_gradient_P(volume, divide_factor=1., mask=True):
+    s0,s1,s2 = volume.shape
+    if (s0 == 26): res = '10'
+    if (s0 == 32): res = '8'
+    if (s0 == 40): res = '6_4'
     rad = res_to_rad(res)
 
     xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
-    ox = (s1-15)/2.-0.5
-    oy = (s0-15)/2.-0.5
-    oz = (s2-15)/2.-0.5
+    ox = s1/2.-0.5
+    oy = s0/2.-0.5
+    oz = s2/2.-0.5
 
     derivatives = axis_derivatives(volume)
     derivativesP = np.empty([6,s0*s1*s2])
 
     if(mask):
-        mask_weights = get_mask_weights(volume,rad).reshape([s0,s1,s2,1])
+        mask_weights = get_mask_weights(volume.shape,rad).reshape([s0,s1,s2,1])
         derivatives = mask_weights*derivatives
     idx = 0
     for i in xrange(s0):
@@ -154,6 +154,37 @@ def get_gradient_P(derivatives, divide_factor=1., mask=True):
             for k in xrange(s2):
                 M = get_M(yy[i,j,k]-ox,xx[i,j,k]-oy,zz[i,j,k]-oz,divide_factor)
                 derivativesP[:,idx] = (M.T).dot(derivatives[i,j,k])
+                idx += 1
+    return derivativesP
+
+def get_gradient_P1(derivatives, divide_factor=1., mask=True):
+    s0,s1,s2,s3 = derivatives.shape
+    s0 = s0 - 30
+    s1 = s1 - 30
+    s2 = s2 - 30
+
+    if (s0 == 26): res = '10'
+    if (s0 == 32): res = '8'
+    if (s0 == 40): res = '6_4'
+    rad = res_to_rad(res)
+
+    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    ox = s1/2.-0.5
+    oy = s0/2.-0.5
+    oz = s2/2.-0.5
+
+    derivativesP = np.empty([6,s0*s1*s2])
+
+    if(mask):
+        mask_weights = get_mask_weights((s0,s1,s2),rad).ravel()
+
+    idx = 0
+
+    for i in xrange(s0):
+        for j in xrange(s1):
+            for k in xrange(s2):
+                M = get_M(yy[i,j,k]-ox,xx[i,j,k]-oy,zz[i,j,k]-oz,divide_factor)
+                derivativesP[:,idx] = (M.T).dot(derivatives[i+15,j+15,k+15][[1,4,16]])*mask_weights[idx]
                 idx += 1
     return derivativesP
 
@@ -214,7 +245,7 @@ def Gauss_Newton(Vol1, Vol1_Grad_P, Vol2, Vol2_derivatives,
     oz = s2/2.-0.5
 
     if(mask):
-        mask_weights = get_mask_weights(Vol1,rad)
+        mask_weights = get_mask_weights(Vol1.shape,rad)
 
     Ps = []
     P_old = P_initial.copy()
@@ -262,10 +293,12 @@ def Gauss_Newton(Vol1, Vol1_Grad_P, Vol2, Vol2_derivatives,
         plot_errors(errors)
     return errors, Ps
 
-def Gauss_Newton_1(Vol1, Vol2, Vol2_derivatives, 
+def Gauss_Newton1(Vol1, Vol2, Vol2_derivatives, 
                  divide_factor = 1., alpha = 1., decrease_factor = 0.25, 
                  P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 10, mask = True):
     s0,s1,s2 = Vol1.shape
+    volume_shape = Vol1.shape
+
     if (s0 == 26): res = '10'
     if (s0 == 32): res = '8'
     if (s0 == 40): res = '6_4'
@@ -277,27 +310,24 @@ def Gauss_Newton_1(Vol1, Vol2, Vol2_derivatives,
     oz = s2/2.-0.5
 
     if(mask):
-        mask_weights = get_mask_weights(Vol1,rad)
+        mask_weights = get_mask_weights(volume_shape,rad)
 
     Ps = []
     P_old = P_initial.copy()
     P_new = P_old.copy()
     Ps.append(P_new)
-    Vol2_derivs = Vol2_derivatives[15:-15,15:-15,15:-15,(1,4,16)]
-    Vol2_grap_P = get_gradient_P()
-    Jr = Vol1_Grad_P.T
+    Vol2_grap_P = get_gradient_P1(Vol2_derivatives)
+    #Jr = Vol2_grap_P.T
 
     errors = []
     errors.append(np.sum(Vol1))
     
-    volume_shape = Vol1.shape
     for counter in xrange(max_iter):
         #print counter,
         P_old = P_new.copy()
         # Get the new coordinates by rotating the volume by the opposite amount of P_s
-        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, -P_old, ox, oy, oz,divide_factor,volume_shape)
+        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, P_old, ox, oy, oz,divide_factor,volume_shape)
         # Initilization
-        #Jr = Vol1_Grad_P.T
         dest = np.empty(volume_shape)
 
         for i in xrange(volume_shape[0]):
@@ -316,8 +346,8 @@ def Gauss_Newton_1(Vol1, Vol2, Vol2_derivatives,
         else:
             errors.append(error)
             Ps.append(P_old)
-            Jr_rP = -Vol1_Grad_P.dot(flatR)
-            P_new = P_old - alpha*np.dot(np.linalg.inv(np.dot(Jr.T,Jr)),Jr_rP)
+            Jr_rP = -Vol2_grap_P.dot(flatR)
+            P_new = P_old - alpha*np.dot(np.linalg.inv(np.dot(Vol2_grap_P,Vol2_grap_P.T)),Jr_rP)
             if((abs(P_new - P_old) < 1e-5).all()):
                 print 'Converged in %s iterations!' % counter
                 break
@@ -325,6 +355,12 @@ def Gauss_Newton_1(Vol1, Vol2, Vol2_derivatives,
         trace_plot(Ps, float('.'.join(res.split('_'))))
         plot_errors(errors)
     return errors, Ps
+
+
+
+
+
+
 
 def LM(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives, 
        divide_factor = 16., lamda = 0.2, decrease_factor = 0.25, 
@@ -339,7 +375,7 @@ def LM(Vol1, Vol1_derivatives, Vol2, Vol2_derivatives,
     oy = volume_shape[0]/2.-0.5
     oz = volume_shape[2]/2.-0.5
 
-    mask_weights = get_mask_weights(Vol1,16).reshape([volume_shape[1],volume_shape[0],volume_shape[2],1])
+    mask_weights = get_mask_weights(Vol1.shape,16).reshape([volume_shape[1],volume_shape[0],volume_shape[2],1])
 
     Ps = []
     P_old = P_initial.copy()
