@@ -71,6 +71,8 @@ X_inv =np.array([
 ( 8,-8,-8, 8,-8, 8, 8,-8, 4, 4,-4,-4,-4,-4, 4, 4, 4,-4, 4,-4,-4, 4,-4, 4, 4,-4,-4, 4, 4,-4,-4, 4, 2, 2, 2, 2,-2,-2,-2,-2, 2, 2,-2,-2, 2, 2,-2,-2, 2,-2, 2,-2, 2,-2, 2,-2, 1, 1, 1, 1, 1, 1, 1, 1)
 ])
 
+bSplineCoeffsMat = np.array(np.memmap('/Users/zyzdiana/GitHub/AC297r-Volume-Registration/code/bSplineCoeffsMat.dat',dtype=np.float32,mode='c',shape=(64,64)))
+
 def get_target_Y(z, y, x):
     Y = np.empty([z.shape[1],z.shape[0],64])
     Y[:,:,0] = 1.
@@ -143,7 +145,7 @@ def get_target_Y(z, y, x):
     Y[:,:,63] = x**3*y**3*z**3
     return Y
 
-def get_target_Y_1d(x, y, z):
+def get_target_Y_1d(z,y,x):
     Y = np.zeros([1,64])
     Y[:,0] = 1.
     Y[:,1] = x
@@ -214,6 +216,8 @@ def get_target_Y_1d(x, y, z):
     Y[:,62] = x**2*y**3*z**3
     Y[:,63] = x**3*y**3*z**3
     return Y
+
+##################################### Tricubic Interpolator ##############################################################
 
 def tricubic_derivatives(volume):
     shape = volume.shape
@@ -346,21 +350,7 @@ def tricubic_derivatives(volume):
                 #tricubic_derivative_dict[(j,i,k)] = np.dot(X_inv,Y)
                 tricubic_derivative_dict[j+15,i+15,k+15,:] = np.dot(X_inv,Y)
     return tricubic_derivative_dict
-'''
-                # Clip Range
-                x0 = np.clip(x0, 0, volume.shape[1]-1)
-                x1 = np.clip(x1, 0, volume.shape[1]-1)
-                x2 = np.clip(x2, 0, volume.shape[1]-1)
-                x3 = np.clip(x3, 0, volume.shape[1]-1)
-                y0 = np.clip(y0, 0, volume.shape[0]-1)
-                y1 = np.clip(y1, 0, volume.shape[0]-1)
-                y2 = np.clip(y2, 0, volume.shape[0]-1)
-                y3 = np.clip(y3, 0, volume.shape[0]-1)
-                z0 = np.clip(z0, 0, volume.shape[2]-1)
-                z1 = np.clip(z1, 0, volume.shape[2]-1)
-                z2 = np.clip(z2, 0, volume.shape[2]-1)
-                z3 = np.clip(z3, 0, volume.shape[2]-1)
-'''
+
 # Tricubic interpolation
 def tricubic_interp(shape, derivatives, x, y, z):
     '''
@@ -398,17 +388,191 @@ def tricubic_interp_1d(shape, derivatives, x, y, z):
 
     # load in precomputed first and second derivatives for this volume
     A = derivatives[(y1+15,x1+15,z1+15)]
-    print A
+    #print A
     # Compute A
     #A = np.dot(X_inv,Y)
     # get vector Y from points that need to be interpolated
     target_Y = get_target_Y_1d(y-y1, x-x1, z-z1)
     # compute result
-    print target_Y
     result = np.dot(target_Y, A)
     return result[0]
 
+##################################### BSpline Interpolator ##############################################################
+# define some scalar
+z0 = -2 + np.sqrt(3)
+c0 = 6
 
+def computeG(f, N):
+    g = np.empty(N)
+    g[0] = c0*f[0]
+    for i in xrange(1,N-1):
+        g[i] = z0*g[i-1] + c0*f[i]
+    g[N-1] =  (z0*g[N-2] + c0*f[N-1])/(1 - z0**N)
+    return g
+
+def getA(N):
+    A = np.eye(N)
+    for i in xrange(N-1):
+        A[i, N-1] = z0**(i+1)
+    return A
+
+def computeH(y_plus, N):
+    h = np.zeros(N)
+    h[N-1] = -z0*y_plus[N-1]
+    for i in xrange(1,N-1):
+        h[N-i-1] = -z0*y_plus[N-i-1] + z0*h[N-i]
+    h[0] = (-z0*y_plus[0] + z0*h[1])/(1 - z0**N)
+    return h
+
+def getB(N):
+    B = np.eye(N)
+    for i in xrange(1,N):
+        B[i, 0] = z0**(N-i)
+    return B
+
+def computeY(data, N):
+    y_plus = getA(N).dot(computeG(data,N))
+    return getB(N).dot(computeH(y_plus,N))
+
+def get_coeffs_BSpline(volume):
+    shape = volume.shape
+    # compute coeff in x-direction
+    x_coeff = np.empty(shape)
+    for i in xrange(shape[0]):
+        for j in xrange(shape[1]):
+            x_coeff[i,j,:] = computeY(volume[i,j,:],shape[2])
+    # compute coeff in y-direction        
+    y_coeff = np.empty(shape)
+    for i in xrange(shape[0]):
+        for k in xrange(shape[2]):
+             y_coeff[i,:,k] = computeY(x_coeff[i,:,k],shape[1])
+    # compute coeff in z-direction
+    z_coeff = np.empty(shape)
+    for j in xrange(shape[1]):
+        for k in xrange(shape[2]):
+             z_coeff[:,j,k] = computeY(y_coeff[:,j,k],shape[0])
+    return z_coeff
+
+def BSpline_derivatives(volume):
+    shape = volume.shape
+    derivs = np.empty([shape[0],shape[1],shape[2],3])
+
+    x_coeff = np.empty(shape)
+    for i in xrange(shape[0]):
+        for j in xrange(shape[1]):
+            x_coeff[i,j,:] = computeY(volume[i,j,:],shape[2])
+            
+    tmp = x_coeff-np.roll(x_coeff,1,axis=2)
+    derivs[:,:,:,0] = (tmp + np.roll(tmp,-1,axis=2))/2.0
+    
+    y_coeff = np.empty(shape)
+    for i in xrange(shape[0]):
+        for k in xrange(shape[2]):
+             y_coeff[i,:,k] = computeY(volume[i,:,k],shape[1])
+
+    tmp = y_coeff-np.roll(y_coeff,1,axis=1)
+    derivs[:,:,:,1] = (tmp + np.roll(tmp,-1,axis=1))/2.0
+    
+    z_coeff = np.empty(shape)
+    for j in xrange(shape[1]):
+        for k in xrange(shape[2]):
+             z_coeff[:,j,k] = computeY(volume[:,j,k],shape[0])
+
+    tmp = z_coeff-np.roll(z_coeff,1,axis=0)
+    derivs[:,:,:,2] = (tmp + np.roll(tmp,-1,axis=0))/2.0
+    return derivs
+
+def BSpline_derivatives1(volume):
+    shape = volume.shape
+    x_coeff = np.empty(shape)
+    y_coeff = np.empty(shape)
+    z_coeff = np.empty(shape)
+    for i in xrange(shape[0]):
+        for j in xrange(shape[1]):
+            x_coeff[i,j,:] = computeY(volume[i,j,:],shape[2])
+            y_coeff[i,:,j] = computeY(volume[i,:,j],shape[1])
+            z_coeff[:,i,j] = computeY(volume[:,i,j],shape[0])
+            
+    tmp = x_coeff-np.roll(x_coeff,1,axis=2)
+    deriv_X = (tmp + np.roll(tmp,-1,axis=2))/2.0
+    
+    tmp = y_coeff-np.roll(y_coeff,1,axis=1)
+    deriv_Y = (tmp + np.roll(tmp,-1,axis=1))/2.0
+
+    tmp = z_coeff-np.roll(z_coeff,1,axis=0)
+    deriv_Z = (tmp + np.roll(tmp,-1,axis=0))/2.0
+    return np.array([deriv_X, deriv_Y, deriv_Z])
+
+def BSpline_coefficients(volume):
+    y = get_coeffs_BSpline(volume)
+    N = volume.shape[0]
+    tmp = np.empty([N,N,N,64])
+    idx = 0
+    for i in xrange(-1,3):
+        for j in xrange(-1, 3):
+            for k in xrange(-1, 3):
+                tmp[:,:,:,idx] = np.roll(np.roll(np.roll(y, N-i, axis=0), N-j, axis=1), N-k, axis=2)
+                idx += 1
+    coeffs = np.empty([N,N,N,64])
+    for i in xrange(N):
+        for j in xrange(N):
+            for k in xrange(N):
+                coeffs[i,j,k,:] = bSplineCoeffsMat.dot(tmp[i,j,k,:])
+    return coeffs
+
+def Bspline_interp_1d(shape, coefficients, y, x, z):
+    '''
+    shape: Shape of the Volume to be interpolated
+    coefficients: precomputed coefficients for the volume
+    x,y,z: point at which to be interpolated
+    '''
+
+    x = (x+shape[0]) % shape[0]
+    y = (y+shape[1]) % shape[1]
+    z = (z+shape[2]) % shape[2]
+
+    # find the closes grid of the target points
+    x1 = np.floor(x).astype(int)
+    y1 = np.floor(y).astype(int)
+    z1 = np.floor(z).astype(int) 
+
+    # load in precomputed first and second derivatives for this volume
+    A = coefficients[(x1,y1,z1)]
+
+    # get vector Y from points that need to be interpolated
+    target_Y = get_target_Y_1d(x-x1, y-y1, z-z1)
+    #target_Y = get_target_Y_1d(z-z1, y-y1, x-x1)
+    # compute result
+    result = target_Y.dot(A)
+    return result[0]
+
+def Bspline_interp(shape, coefficients, y, x, z):
+    '''
+    shape: Shape of the Volume to be interpolated
+    derivatives: precomputed derivatives for the volume
+    x,y,z: point at which to be interpolated
+    '''
+
+    x = (x+shape[0]) % shape[0]
+    y = (y+shape[1]) % shape[1]
+    z = (z+shape[2]) % shape[2]
+
+    # find the closes grid of the target points
+    x1 = np.floor(x).astype(int)
+    y1 = np.floor(y).astype(int)
+    z1 = np.floor(z).astype(int)
+
+    # Compute A
+    A = coefficients[x1,y1,z1]
+    # get vector Y from points that need to be interpolated
+    #target_Y = get_target_Y(z-z1, y-y1, x-x1)
+    target_Y = get_target_Y(x-x1, y-y1, z-z1)
+    # compute result
+    result = np.sum(target_Y * A, axis=2)
+    return result
+
+
+##################################### Linear Interpolator ##############################################################
 # Trilinear interplation
 def trilinear_interp(volume, x, y, z):
     x = np.asarray(x)
@@ -455,7 +619,7 @@ def to_radian(theta):
     '''
     return theta*np.pi/180.
 
-def rotation_matrix_zyx(gamma, beta, alpha):
+def rotation_matrix_zyx(gamma, beta, alpha, radian = False):
     """
     Return the rotation matrix associated with counterclockwise rotation 
     about x axis by gamma degrees
@@ -463,9 +627,10 @@ def rotation_matrix_zyx(gamma, beta, alpha):
     about z axis by alpha degrees
     """
     # convert degrees to radians
-    gamma = to_radian(gamma)
-    beta = to_radian(beta)
-    alpha = to_radian(alpha)
+    if(not radian):
+        gamma = to_radian(gamma)
+        beta = to_radian(beta)
+        alpha = to_radian(alpha)
     
     rz = np.array([[np.cos(alpha),-np.sin(alpha),0],[np.sin(alpha),np.cos(alpha),0],[0,0,1]])
     ry = np.array([[np.cos(beta),0, np.sin(beta)],[0, 1, 0],[-np.sin(beta),0,np.cos(beta)]])
@@ -637,6 +802,36 @@ def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx=None,y
         dest = np.empty(volume_shape)
         for i in xrange(volume_shape[0]):
             dest[i,:,:] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:]) 
+    return dest
+
+def volrotate_bspline(volume_shape, bspline_coeffs, theta, wx, wy, wz):
+    '''
+    volume_shape: shape of the input volume
+    bspline_coeffs: precomputed coeffcients values for each point
+    wx, wy, wz is the unit vector describing the axis of rotation
+    theta is the rotation angle
+    xx,yy,zz: loaded meshgrid
+    '''
+    # find center of the volume
+    ox = volume_shape[0]/2.-0.5
+    oy = volume_shape[1]/2.-0.5
+    oz = volume_shape[2]/2.-0.5
+    
+    if(volume_shape[0] == 26): res = '10'
+    elif(volume_shape[0] == 32): res = '8'
+    else: res = '6_4'
+    
+    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    dest_x, dest_y, dest_z = rotate_coords_3d(yy, xx, zz, theta, wx, wy, wz, ox, oy, oz)
+
+    dest = np.empty(volume_shape)
+    for i in xrange(volume_shape[0]):
+        dest[i,:,:] = Bspline_interp(volume_shape,bspline_coeffs,dest_y[i,:,:],dest_x[i,:,:],dest_z[i,:,:]) 
+
+    # for i in xrange(volume_shape[0]):
+    #     for j in xrange(volume_shape[1]):
+    #         for k in xrange(volume_shape[2]):
+    #             dest[i,j,k] = Bspline_interp_1d(volume_shape,bspline_coeffs,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k])
     return dest
 
 def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz, xx,yy,zz,interpolation = 'trilinear'):

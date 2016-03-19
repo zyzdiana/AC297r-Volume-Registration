@@ -89,6 +89,30 @@ def rotation_matrix_fromq(theta, ui, uj, uk):
     
     return rotMatrix
 
+def rotation_matrix_from_params(params):
+    rotMatrix = np.identity(3)
+    l = np.sqrt(params[1]**2+params[0]**2+params[2]**2)
+    if(l == 0):
+        return rotMatrix
+    s,alpha = np.sin(l/2.),np.cos(l/2.)
+    beta = s*params[0]/l
+    gamma = s*params[1]/l
+    delta = s*params[2]/l
+
+    rotMatrix[0][0] = alpha**2+beta**2-gamma**2-delta**2
+    rotMatrix[0][1] = 2*(beta*gamma-alpha*delta)
+    rotMatrix[0][2] = 2*(beta*delta+alpha*gamma)
+
+    rotMatrix[1][0] = 2*(beta*gamma+alpha*delta)
+    rotMatrix[1][1] = alpha**2-beta**2+gamma**2-delta**2
+    rotMatrix[1][2] = 2*(gamma*delta-alpha*beta)
+
+    rotMatrix[2][0] = 2*(beta*delta-alpha*gamma)
+    rotMatrix[2][1] = 2*(gamma*delta+alpha*beta)
+    rotMatrix[2][2] = alpha**2-beta**2-gamma**2+delta**2
+    return rotMatrix
+
+
 # Get the three angles of rotation give axis-angle representation
 def angles_from_q(theta, ui, uj, uk):
     Q = rotation_matrix_fromq(theta, ui, uj, uk)
