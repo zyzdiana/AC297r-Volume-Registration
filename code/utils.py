@@ -71,6 +71,20 @@ def ax_to_w(rot_ax):
     else: wx,wy,wz = -1,0,-1
     return wx,wy,wz
 
+# def rep_to_angle(rep, rot_range):
+#     counter = rep % 6
+#     rotation_angle = 0.0
+#     translation_step = rep / 6 
+
+#     if rot_range == '0_5_to_2_5':
+#         if(counter != 0):
+#             rotation_angle = 0.5 * counter
+#     else: 
+#         # range = 3.0 to 5.0
+#         if(counter != 0):
+#             rotation_angle = 3.0 + (0.5 * (counter - 1))
+#     return rotation_angle, translation_step
+
 def rep_to_angle(rep, rot_range):
     counter = rep % 6
     rotation_angle = 0.0
@@ -79,8 +93,15 @@ def rep_to_angle(rep, rot_range):
     if rot_range == '0_5_to_2_5':
         if(counter != 0):
             rotation_angle = 0.5 * counter
-    else: 
-        # range = 3.0 to 5.0
+    elif rot_range == '3_0_to_5_0':
         if(counter != 0):
             rotation_angle = 3.0 + (0.5 * (counter - 1))
+    elif rot_range == '2_5_to_12_5':
+        if(counter != 0):
+            rotation_angle = 2.5 + (2.5 * (counter - 1))        
+    elif rot_range == '15_to_25':
+        if(counter != 0):
+            rotation_angle = 15 + (2.5 * (counter - 1))
+    else:
+        print 'Invalid range of rotation'
     return rotation_angle, translation_step

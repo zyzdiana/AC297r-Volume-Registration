@@ -63,11 +63,12 @@ def plot_cost_func(thetas,cost_func,res,interp,rot, coil='body',alpha = 1, lw = 
     plt.ylabel('Cost function')
     plt.legend(loc='best')
 
-def plot_cost_func_t(trans,cost_func,res,trans_ax, coil='body'):
+def plot_cost_func_t(trans,cost_func,res,interp,trans_ax, coil='body',alpha = 1, lw = 4):
+    res = float('.'.join(res.split('_')))
     # plot the cost function and find the minimum angle
-    transMin = trans[np.argmin(cost_func,axis=0)]*int(res[:-2])
-    plt.plot(trans,cost_func,label='Min translation = %s\n Resolution = %s \n translation = %s' % (transMin, res,trans_ax))
-    plt.title('SSD for Translation, %s coil' % (coil), fontsize=14)
+    transMin = trans[np.argmin(cost_func,axis=0)]*res
+    plt.plot(trans,cost_func,alpha = alpha, lw = lw,label='Min translation = %s\n Resolution = %s \n translation = %s' % (transMin, res,trans_ax))
+    plt.title('Translation SSD with %s interpolation, %s coil' % (interp,coil), fontsize=14)
     plt.xlabel('Translation (Voxel)')
     plt.ylabel('Cost function')
     plt.legend(loc='best')

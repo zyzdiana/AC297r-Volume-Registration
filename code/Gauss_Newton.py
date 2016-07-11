@@ -38,7 +38,6 @@ def get_nonzero_mask(volume_shape, radius, d=0.4):
     mask_frequency = np.array([[[window(np.linalg.norm(np.array([x,y,z]) - origin), radius, d) 
                                  for x in range(volume_shape[0])] for y in range(volume_shape[1])] 
                                for z in range(volume_shape[2])])
-
     return mask_frequency != 0
     
 def get_mask_weights(volume_shape, radius, d=0.4):
@@ -46,7 +45,6 @@ def get_mask_weights(volume_shape, radius, d=0.4):
     mask_frequency = np.array([[[window(np.linalg.norm(np.array([x,y,z]) - origin), radius, d) 
                                  for x in range(volume_shape[0])] for y in range(volume_shape[1])] 
                                for z in range(volume_shape[2])])
-
     return mask_frequency
 
 def fourier_filter(vol, rad):
@@ -91,7 +89,7 @@ def axis_derivatives(volume):
 
     return Y
 
-def rotate_coords_transformation_m(xx, yy, zz, params, ox,oy,oz, k=16.,shape = (32,32,32)):
+def rotate_coords_transformation_m(xx, yy, zz, params, ox,oy,oz, k=1.,shape = (32,32,32)):
     rotMatrix = np.identity(3)
     l = np.sqrt(params[4]**2+params[3]**2+params[5]**2)/k
     if(l == 0):
@@ -129,7 +127,7 @@ def get_M(x1_org,x2_org,x3_org,k=16.):
     M = np.array([[0,0,-1,-x2,x1,0],[0,-1,0,x3,0,-x1],[-1,0,0,0,-x3,x2]])
     return M
 
-def get_gradient_P(volume, axis_derivatives = axis_derivatives, divide_factor=1., mask=False):
+def get_gradient_P(volume, axis_derivatives = axis_derivatives, divide_factor=1., mask=True):
     s0,s1,s2 = volume.shape
     if (s0 == 26): res = '10'
     if (s0 == 32): res = '8'
@@ -158,10 +156,10 @@ def get_gradient_P(volume, axis_derivatives = axis_derivatives, divide_factor=1.
 
 def get_gradient_P1(derivatives, divide_factor=1., mask=False):
     s0,s1,s2,s3 = derivatives.shape
-    s0 = s0 - 30
-    s1 = s1 - 30
-    s2 = s2 - 30
-
+    # s0 = s0 - 30
+    # s1 = s1 - 30
+    # s2 = s2 - 30
+    print s0, s1, s2
     if (s0 == 26): res = '10'
     if (s0 == 32): res = '8'
     if (s0 == 40): res = '6_4'
@@ -295,10 +293,12 @@ def Gauss_Newton(Vol1, Vol1_Grad_P, Vol2, Vol2_derivatives,
     if(plot):
         trace_plot(Ps, float('.'.join(res.split('_'))))
         plot_errors(errors)
-    return errors, Ps
+        return errors, Ps
+    else:
+        return errors, Ps, counter
 
 def Gauss_Newton_Linear(Vol1, Vol1_Grad_P, Vol2, divide_factor = 1., alpha = 1., decrease_factor = 0.25, 
-                        P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 10, mask = True):
+                        P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 10, mask = True, trilinear_interp = trilinear_interp):
     s0,s1,s2 = Vol1.shape
     if (s0 == 26): res = '10'
     if (s0 == 32): res = '8'
@@ -354,11 +354,76 @@ def Gauss_Newton_Linear(Vol1, Vol1_Grad_P, Vol2, divide_factor = 1., alpha = 1.,
     if(plot):
         trace_plot(Ps, float('.'.join(res.split('_'))))
         plot_errors(errors)
-    return errors, Ps
+        return errors, Ps
+    else:
+        return errors, Ps, counter
 
-def Gauss_Newton1(Vol1, Vol2, Vol2_derivatives, 
+def Gauss_Newton_Linear1(Vol1, Vol2, Vol2_Grad_P, divide_factor = 1., alpha = 1., decrease_factor = 0.25, 
+                        P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 10, mask = True):
+    s0,s1,s2 = Vol1.shape
+    if (s0 == 26): res = '10'
+    if (s0 == 32): res = '8'
+    if (s0 == 40): res = '6_4'
+    rad = res_to_rad(res)
+
+    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    ox = s1/2.-0.5
+    oy = s0/2.-0.5
+    oz = s2/2.-0.5
+
+    if(mask):
+        mask_weights = get_mask_weights(Vol1.shape,rad)
+
+    Ps = []
+    P_old = P_initial.copy()
+    P_new = P_old.copy()
+    Ps.append(P_new)
+
+    Jr = Vol2_Grad_P.T
+
+    errors = []
+    errors.append(np.sum(Vol1))
+
+    volume_shape = Vol1.shape
+    for counter in xrange(max_iter):
+        #print counter,
+        P_old = P_new.copy()
+        # Get the new coordinates by rotating the volume by the opposite amount of P_s
+        dest_x, dest_y, dest_z = rotate_coords_transformation_m(xx, yy, zz, P_old, ox, oy, oz,divide_factor,volume_shape)
+        # Initilization
+        #Jr = Vol2_Grad_P.T
+        dest = trilinear_interp(Vol2, dest_x, dest_y, dest_z)
+
+        if(mask):
+            dest *= mask_weights
+
+        flatR = np.ravel(Vol1-dest)
+        error = np.sum(flatR**2)
+
+        # if error is getting larger, go back one step and decrease alpha
+        if(error > errors[-1]):
+            alpha = alpha * decrease_factor
+            P_new = Ps[-1]
+        else:
+            errors.append(error)
+            Ps.append(P_old)
+            Jr_rP = -Vol2_Grad_P.dot(flatR)
+            P_new = P_old - alpha*np.dot(np.linalg.inv(np.dot(Jr.T,Jr)),Jr_rP)
+            if((abs(P_new - P_old) < 1e-5).all()):
+                print 'Converged in %s iterations!' % counter
+                break
+    if(plot):
+        trace_plot(Ps, float('.'.join(res.split('_'))))
+        plot_errors(errors)
+        return errors, Ps
+    else:
+        return errors, Ps, counter
+
+
+def Gauss_Newton1(Vol1, Vol2, Vol2_derivatives, Vol2_grap_P,
                  divide_factor = 1., alpha = 1., decrease_factor = 0.25, 
-                 P_initial = np.array([0,0,0,0,0,0]), plot = True, max_iter = 10, mask = True):
+                 P_initial = np.array([0,0,0,0,0,0]), plot = True, 
+                 max_iter = 10, mask = True, interp = tricubic_interp):
     s0,s1,s2 = Vol1.shape
     volume_shape = Vol1.shape
 
@@ -379,7 +444,7 @@ def Gauss_Newton1(Vol1, Vol2, Vol2_derivatives,
     P_old = P_initial.copy()
     P_new = P_old.copy()
     Ps.append(P_new)
-    Vol2_grap_P = get_gradient_P1(Vol2_derivatives, mask = mask)
+    #Vol2_grap_P = get_gradient_P(Vol2, mask = mask, axis_derivatives = axis_derivatives)
 
 
     errors = []
@@ -395,7 +460,7 @@ def Gauss_Newton1(Vol1, Vol2, Vol2_derivatives,
         dest = np.empty(volume_shape)
 
         for i in xrange(volume_shape[0]):
-            dest[i,:,:] = tricubic_interp(volume_shape,Vol2_derivatives,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:])
+            dest[i,:,:] = interp(volume_shape,Vol2_derivatives,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:])
 
         if(mask):
             dest *= mask_weights
@@ -411,7 +476,11 @@ def Gauss_Newton1(Vol1, Vol2, Vol2_derivatives,
         else:
             errors.append(error)
             Ps.append(P_old)
+            # print 'P', P_old
+            # print 'error', error
             Jr_rP = -Vol2_grap_P.dot(flatR)
+            # print 'Jr_rP', Jr_rP
+            # print alpha, np.dot(np.linalg.inv(np.dot(Vol2_grap_P,Vol2_grap_P.T)),Jr_rP)
             P_new = P_old - alpha*np.dot(np.linalg.inv(np.dot(Vol2_grap_P,Vol2_grap_P.T)),Jr_rP)
             if((abs(P_new - P_old) < 1e-5).all()):
                 print 'Converged in %s iterations!' % counter
@@ -419,7 +488,9 @@ def Gauss_Newton1(Vol1, Vol2, Vol2_derivatives,
     if(plot):
         trace_plot(Ps, float('.'.join(res.split('_'))))
         plot_errors(errors)
-    return errors, Ps
+        return errors, Ps
+    else:
+        return errors, Ps, counter
 
 
 

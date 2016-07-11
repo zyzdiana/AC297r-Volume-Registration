@@ -1,0 +1,181 @@
+# plotting quantiles
+def error_plot_rotations_translations_2(figsize, r_idx_6_4, r_idx_8, r_idx_10, t_idx_6_4, t_idx_8, t_idx_10, RMS = True):
+    colors = ['red','blue','green','orange','brown','purple']
+    quantile_colors = ['blue','black','red','black','blue']
+    y = np.arange(1,10)
+    labels = ['10mm\nCubic\nB-spline','10mm\nTricubic','10mm\nTrilinear',
+              '8mm\nCubic\nB-spline','8mm\nTricubic','8mm\nTrilinear',
+              '6.4mm\nCubic\nB-spline','6.4mm\nTricubic','6.4mm\nTrilinear']
+    
+    plt.figure(figsize = figsize)
+    
+    plt.subplot(1,2,1)
+    plt.yticks(y, labels, rotation='horizontal',fontsize=18)
+    plt.xticks(fontsize=18)
+    for idx, rot_ax in enumerate(['x','y','z','xy','yz','xz']):
+        if rot_ax == 'x':
+            label = 'x (LR/partition) rotation, z translation'
+        elif rot_ax == 'y':
+            label = 'y (AP/phase) rotation, z translation'
+        elif rot_ax == 'z':
+            label = 'z (HF/readout) rotation, z translation'
+        else: 
+            label = rot_ax + " rotation, xy translation"
+        plt.scatter(-3, -3, lw=0,s = 150, c = colors[idx],alpha = 0.3,marker='o' , label=label)
+    plt.plot([-4,-5],[-4,-5],lw=1,c='red',label='median')
+    plt.plot([-4,-5],[-4,-5],lw=1,c='black',label='25%, 75% quantile')
+    plt.plot([-4,-5],[-4,-5],lw=1,c='blue',label='5%, 95% quantile')
+    
+    idx = 1-0.2
+    error_plot(RMS_bspline[r_idx_10],idx)
+    plt.vlines(np.percentile(np.array(RMS_bspline[r_idx_10]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_bspline_oct13[r_idx_10],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_bspline_oct13[r_idx_10]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+    
+    idx += 1 
+    error_plot(RMS_cubic[r_idx_10],idx)
+    plt.vlines(np.percentile(np.array(RMS_cubic[r_idx_10]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_cubic_oct13[r_idx_10],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_cubic_oct13[r_idx_10]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_linear[r_idx_10],idx)
+    plt.vlines(np.percentile(np.array(RMS_linear[r_idx_10]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_linear_oct13[r_idx_10],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_linear_oct13[r_idx_10]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_bspline[r_idx_8],idx)
+    plt.vlines(np.percentile(np.array(RMS_bspline[r_idx_8]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+  
+    error_plot(RMS_bspline_oct13[r_idx_8],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_bspline_oct13[r_idx_8]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_cubic[r_idx_8],idx)
+    plt.vlines(np.percentile(np.array(RMS_cubic[r_idx_8]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_cubic_oct13[r_idx_8],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_cubic_oct13[r_idx_8]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_linear[r_idx_8],idx)
+    plt.vlines(np.percentile(np.array(RMS_linear[r_idx_8]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_linear_oct13[r_idx_8],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_linear_oct13[r_idx_8]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_bspline[r_idx_6_4],idx)
+    plt.vlines(np.percentile(np.array(RMS_bspline[r_idx_6_4]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+ 
+    error_plot(RMS_bspline_oct13[r_idx_6_4],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_bspline_oct13[r_idx_6_4]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_cubic[r_idx_6_4],idx)
+    plt.vlines(np.percentile(np.array(RMS_cubic[r_idx_6_4]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_cubic_oct13[r_idx_6_4],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_cubic_oct13[r_idx_6_4]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_linear[r_idx_6_4],idx)
+    plt.vlines(np.percentile(np.array(RMS_linear[r_idx_6_4]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_linear_oct13[r_idx_6_4],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_linear_oct13[r_idx_6_4]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+    
+    plt.vlines(0,0,7,color = 'r',lw=1,linestyle='--')
+    plt.ylim([0.7,9.3])
+    plt.legend(loc='center left', bbox_to_anchor=(-0.28, 1.13), ncol=2, scatterpoints=1,fontsize = 20)
+    #plt.title('Rotation RMS',fontsize = 20)
+    if(RMS):
+        plt.xlim([0,xlim_max_rot_rms])
+        plt.xlabel('Rotation Error (degrees)',fontsize=20)
+    else:
+        plt.xlim([0,1.0])
+        plt.xlabel('Maximum displacement\ndue to rotation (mm)',fontsize=20)
+    plt.grid('off')
+
+    plt.subplot(1,2,2)
+    plt.yticks([])
+    plt.xticks(fontsize=18)
+    
+    idx = 1
+    error_plot(RMS_bspline[t_idx_10],idx)
+    plt.vlines(np.percentile(np.array(RMS_bspline[t_idx_10]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_bspline_oct13[t_idx_10],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_bspline_oct13[t_idx_10]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1 
+    error_plot(RMS_cubic[t_idx_10],idx)
+    plt.vlines(np.percentile(np.array(RMS_cubic[t_idx_10]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_cubic_oct13[t_idx_10],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_cubic_oct13[t_idx_10]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_linear[t_idx_10],idx)
+    plt.vlines(np.percentile(np.array(RMS_linear[t_idx_10]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_linear_oct13[t_idx_10],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_linear_oct13[t_idx_10]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+    
+    idx += 1
+    error_plot(RMS_bspline[t_idx_8],idx)
+    plt.vlines(np.percentile(np.array(RMS_bspline[t_idx_8]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+ 
+    error_plot(RMS_bspline_oct13[t_idx_8],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_bspline_oct13[t_idx_8]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_cubic[t_idx_8],idx)
+    plt.vlines(np.percentile(np.array(RMS_cubic[t_idx_8]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_cubic_oct13[t_idx_8],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_cubic_oct13[t_idx_8]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_linear[t_idx_8],idx)
+    plt.vlines(np.percentile(np.array(RMS_linear[t_idx_8]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_linear_oct13[t_idx_8],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_linear_oct13[t_idx_8]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_bspline[t_idx_6_4],idx)
+    plt.vlines(np.percentile(np.array(RMS_bspline[t_idx_6_4]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+ 
+    error_plot(RMS_bspline_oct13[t_idx_6_4],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_bspline_oct13[t_idx_6_4]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_cubic[t_idx_6_4],idx)
+    plt.vlines(np.percentile(np.array(RMS_cubic[t_idx_6_4]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_cubic_oct13[t_idx_6_4],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_cubic_oct13[t_idx_6_4]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+
+    idx += 1
+    error_plot(RMS_linear[t_idx_6_4],idx)
+    plt.vlines(np.percentile(np.array(RMS_linear[t_idx_6_4]),[5,25,50,75,95]),idx-0.16,idx+0.16,lw=1,color=quantile_colors)
+
+    error_plot(RMS_linear_oct13[t_idx_6_4],idx+0.4)
+    plt.vlines(np.percentile(np.array(RMS_linear_oct13[t_idx_6_4]),[5,25,50,75,95]),idx+0.4-0.16,idx+0.4+0.16,lw=1,color=quantile_colors)
+    
+    plt.vlines(0,0,7,color = 'r',lw=1,linestyle='--')
+    if(RMS):
+        plt.xlim([0,xlim_max_trans])
+        plt.xlabel('Translation Error (mm)',fontsize=20)
+    else:
+        plt.xlim([0,1.0])
+        plt.xlabel('RMS displacemnt\ndue to rotation (mm)',fontsize=20)
+    plt.ylim([0.7,9.3])
+    plt.grid('off')
+    
+    plt.show()

@@ -382,9 +382,10 @@ def tricubic_interp_1d(shape, derivatives, x, y, z):
     x,y,z: point at which to be interpolated
     '''
     # find the closes grid of the target points
-    x1 = np.floor(x).astype(int)
-    y1 = np.floor(y).astype(int)
-    z1 = np.floor(z).astype(int)
+
+    x1 = np.floor(x % shape[0]).astype(int)
+    y1 = np.floor(y % shape[1]).astype(int)
+    z1 = np.floor(z % shape[2]).astype(int)
 
     # load in precomputed first and second derivatives for this volume
     A = derivatives[(y1+15,x1+15,z1+15)]
@@ -572,6 +573,83 @@ def Bspline_interp(shape, coefficients, y, x, z):
     return result
 
 
+##################################### Optimized Linear Interpolator ##############################################################
+B_linear = np.array([[1,0,0,0,0,0,0,0],
+                     [-1,1,0,0,0,0,0,0],
+                     [-1,0,1,0,0,0,0,0],
+                     [-1,0,0,1,0,0,0,0],
+                     [1,-1,-1,0,1,0,0,0],
+                     [1,0,-1,-1,0,1,0,0],
+                     [1,-1,0,-1,0,0,1,0],
+                     [-1,1,1,1,-1,-1,-1,1]])
+
+def get_target_Y_trilinear_1d(y, x, z):
+    Y = np.zeros([8])
+    Y[0] = 1.
+    Y[1] = x
+    Y[2] = y
+    Y[3] = z
+    Y[4] = x*y
+    Y[5] = y*z
+    Y[6] = x*z
+    Y[7] = x*y*z
+    return Y
+
+def get_target_Y_trilinear(y, x, z):
+    Y = np.zeros([x.shape[0],x.shape[1], 8])
+    Y[:,:,0] = 1.
+    Y[:,:,1] = x
+    Y[:,:,2] = y
+    Y[:,:,3] = z
+    Y[:,:,4] = x*y
+    Y[:,:,5] = y*z
+    Y[:,:,6] = x*z
+    Y[:,:,7] = x*y*z
+    return Y
+
+def optimized_trilinear_interp_1d(shape, coefficients, y, x, z):
+    x0 = np.floor(x % shape[0]).astype(int)
+    y0 = np.floor(y % shape[1]).astype(int)
+    z0 = np.floor(z % shape[2]).astype(int)
+    A = coefficients[x0, y0, z0]
+    target_Y = get_target_Y_trilinear_1d(x-x0, y-y0, z-z0)
+    result = np.dot(target_Y, A)
+    return result
+
+def optimized_trilinear_interp(shape, coefficients, y, x, z):
+    x0 = np.floor(x % shape[0]).astype(int)
+    y0 = np.floor(y % shape[1]).astype(int)
+    z0 = np.floor(z % shape[2]).astype(int)
+    A = coefficients[x0, y0, z0]
+    target_Y = get_target_Y_trilinear(x-x0, y-y0, z-z0)
+    result = np.sum(target_Y * A, axis=2)
+    return result
+
+def trilinear_coefficients(volume):
+    shape = volume.shape
+    trilinear_coefficients = np.empty([shape[0], shape[1], shape[2], 8])
+    for i in xrange(shape[0]):
+        for j in xrange(shape[1]):
+            for k in xrange(shape[2]):
+                # Take care of boundary conditions
+                x0 = i
+                y0 = j
+                z0 = k
+                x1 = (x0 + 1) % shape[0]
+                y1 = (y0 + 1) % shape[1]
+                z1 = (z0 + 1) % shape[2]
+
+                Y = np.zeros([8,])
+                Y[0] = volume[x0,y0,z0]
+                Y[1] = volume[x1,y0,z0]
+                Y[2] = volume[x0,y1,z0]
+                Y[3] = volume[x0,y0,z1]
+                Y[4] = volume[x1,y1,z0]
+                Y[5] = volume[x0,y1,z1]
+                Y[6] = volume[x1,y0,z1]
+                Y[7] = volume[x1,y1,z1]
+                trilinear_coefficients[i,j,k,:] = np.dot(B_linear,Y)
+    return trilinear_coefficients
 ##################################### Linear Interpolator ##############################################################
 # Trilinear interplation
 def trilinear_interp(volume, x, y, z):
@@ -587,13 +665,23 @@ def trilinear_interp(volume, x, y, z):
     z0 = np.floor(z).astype(int)
     z1 = z0 + 1
     volume_shape = volume.shape
+
     # Clip
-    x0 = x0.clip(0, volume_shape[0]-1)
-    x1 = x1.clip(0, volume_shape[0]-1)
-    y0 = y0.clip(0, volume_shape[1]-1)
-    y1 = y1.clip(0, volume_shape[1]-1)
-    z0 = z0.clip(0, volume_shape[2]-1)
-    z1 = z1.clip(0, volume_shape[2]-1)    
+    # x0 = x0.clip(0, volume_shape[0]-1)
+    # x1 = x1.clip(0, volume_shape[0]-1)
+    # y0 = y0.clip(0, volume_shape[1]-1)
+    # y1 = y1.clip(0, volume_shape[1]-1)
+    # z0 = z0.clip(0, volume_shape[2]-1)
+    # z1 = z1.clip(0, volume_shape[2]-1)  
+
+    # Wrap around
+    x0 = x0 % volume_shape[0]
+    x1 = x1 % volume_shape[0]
+    y0 = y0 % volume_shape[1]
+    y1 = y1 % volume_shape[1]
+    z0 = z0 % volume_shape[2]
+    z1 = z1 % volume_shape[2] 
+
 
     # define some coefficients
     xd = x-x0
@@ -740,11 +828,11 @@ def volrotate_trilinear(volume_org, theta, wx, wy, wz,xx=None,yy=None,zz=None):
     oy = shape[0]/2.-0.5
     oz = shape[2]/2.-0.5
 
-    if(shape[0] == 26): res = '10'
-    elif(shape[0] == 32): res = '8'
-    else: res = '6_4'
-
-    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    # if(xx == None):
+    #     if(shape[0] == 26): res = '10'
+    #     elif(shape[0] == 32): res = '8'
+    #     else: res = '6_4'
+    #     xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     
     dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
     dest = trilinear_interp(volume, dest_x, dest_y, dest_z)
@@ -788,11 +876,11 @@ def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx=None,y
     oy = volume_shape[0]/2.-0.5
     oz = volume_shape[2]/2.-0.5
     
-    if(volume_shape[0] == 26): res = '10'
-    elif(volume_shape[0] == 32): res = '8'
-    else: res = '6_4'
+    # if(volume_shape[0] == 26): res = '10'
+    # elif(volume_shape[0] == 32): res = '8'
+    # else: res = '6_4'   
+    # xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     
-    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
     dest_x, dest_y, dest_z = rotate_coords_3d(xx, yy, zz, theta, wx, wy, wz, ox, oy, oz)
     if random_points:
         dest = np.empty(dest_x.shape)
@@ -804,7 +892,7 @@ def volrotate_tricubic(volume_shape, tricubic_cache, theta, wx, wy, wz,xx=None,y
             dest[i,:,:] = tricubic_interp(volume_shape,tricubic_cache,dest_x[i,:,:],dest_y[i,:,:],dest_z[i,:,:]) 
     return dest
 
-def volrotate_bspline(volume_shape, bspline_coeffs, theta, wx, wy, wz):
+def volrotate_bspline(volume_shape, bspline_coeffs, theta, wx, wy, wz, xx, yy, zz):
     '''
     volume_shape: shape of the input volume
     bspline_coeffs: precomputed coeffcients values for each point
@@ -817,11 +905,12 @@ def volrotate_bspline(volume_shape, bspline_coeffs, theta, wx, wy, wz):
     oy = volume_shape[1]/2.-0.5
     oz = volume_shape[2]/2.-0.5
     
-    if(volume_shape[0] == 26): res = '10'
-    elif(volume_shape[0] == 32): res = '8'
-    else: res = '6_4'
+    # if(volume_shape[0] == 26): res = '10'
+    # elif(volume_shape[0] == 32): res = '8'
+    # else: res = '6_4'
     
-    xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+    # xx,yy,zz = pickle.load(open('/Users/zyzdiana/Dropbox/THESIS/for_cluster/mesh_grid_%s.p'%res,'rb'))
+
     dest_x, dest_y, dest_z = rotate_coords_3d(yy, xx, zz, theta, wx, wy, wz, ox, oy, oz)
 
     dest = np.empty(volume_shape)
@@ -834,7 +923,7 @@ def volrotate_bspline(volume_shape, bspline_coeffs, theta, wx, wy, wz):
     #             dest[i,j,k] = Bspline_interp_1d(volume_shape,bspline_coeffs,dest_x[i,j,k],dest_y[i,j,k],dest_z[i,j,k])
     return dest
 
-def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz, xx,yy,zz,interpolation = 'trilinear'):
+def rot_cost_func_3d(reference, moving, thetas, wx, wy, wz, xx, yy, zz, mask_weights, interpolation = 'trilinear'):
     '''
     vol1: original image
     vol2: volume to be rotated
@@ -842,16 +931,20 @@ def rot_cost_func_3d(vol1, vol2, thetas, wx, wy, wz, xx,yy,zz,interpolation = 't
     xx,yy,zz: loaded meshgrid
     wx, wy, wz is the unit vector describing the axis of rotation
     '''
+    rad = reference.shape[0]/2
     cost_func = np.zeros([len(thetas),])
     if (interpolation == 'trilinear'):
         for idx, t in enumerate(thetas):
-            new_vol2 = volrotate_trilinear(vol2,t,wx,wy,wz,xx,yy,zz)
-            cost_func[idx] = cf_ssd(new_vol2,vol1)
+            new_vol2 = mask_weights * volrotate_trilinear(moving,t,wx,wy,wz,xx,yy,zz)
+            cost_func[idx] = cf_ssd(new_vol2,reference)
     if(interpolation == 'tricubic'):
-        tricubic_cache = tricubic_derivatives(vol2)
         for idx, t in enumerate(thetas):
-            new_vol2 = volrotate_tricubic(vol2.shape, tricubic_cache, t, wx,wy,wz,xx,yy,zz)
-            cost_func[idx] = cf_ssd(new_vol2,vol1)
+            new_vol2 = mask_weights * volrotate_tricubic(reference.shape, moving, t, wx,wy,wz,xx,yy,zz)
+            cost_func[idx] = cf_ssd(new_vol2,reference)
+    if(interpolation == 'bspline'):
+        for idx, t in enumerate(thetas):
+            new_vol2 = mask_weights * volrotate_bspline(reference.shape, moving, -t, wy,wx,wz,xx,yy,zz)
+            cost_func[idx] = cf_ssd(new_vol2,reference)
     return cost_func
 
 
