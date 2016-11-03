@@ -2,3 +2,5 @@
 Thesis/.ipynb_checkpoints/*
 Thesis/*.p
 Thesis/pickled_results/*
+Thesis/C_output/*
+Thesis/C_output_oribi/*
